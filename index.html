@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brain Quest</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+        <div id="hud">
+            <div><span id="lives">❤️❤️❤️</span></div>
+            <div id="level-name">LEVEL 1</div>
+            <div>⭐ <span id="score">0</span></div>
+        </div>
+
+        <div id="flash-overlay"></div>
+
+        <div id="main-menu" class="overlay active">
+            <h1>BRAIN QUEST</h1>
+            <p style="color: var(--gold); font-size: 14px;">Game Pembelajaran IPS</p>
+            <button class="btn" onclick="showLevelSelect()">MULAI MAIN</button>
+            <button class="btn" onclick="showOverlay('how-to-play')">CARA MAIN</button>
+        </div>
+
+        <div id="how-to-play" class="overlay">
+            <h2>CARA MAIN</h2>
+            <p>- Karakter berlari otomatis.</p>
+            <p>- Tekan SPASI / sentuh layar untuk LOMPAT.</p>
+            <p>- Hindari rintangan atau nyawa (❤️) berkurang.</p>
+            <p>- Masuk Pos (Bendera) untuk kuis IPS.</p>
+            <p>- Jawab benar untuk +10 poin!</p>
+            <button class="btn" onclick="showOverlay('main-menu')">KEMBALI</button>
+        </div>
+
+        <div id="level-select" class="overlay">
+            <h2>PILIH LEVEL</h2>
+            <div class="level-cards" id="levels-container"></div>
+            <button class="btn" onclick="showOverlay('main-menu')" style="margin-top:20px;">KEMBALI</button>
+        </div>
+
+        <div id="quiz-modal" class="overlay">
+            <div class="quiz-card">
+                <h2>POS PINTAR</h2>
+                <p id="quiz-question">Pertanyaan akan muncul di sini?</p>
+                <div class="quiz-options" id="quiz-options"></div>
+                <p id="quiz-feedback" style="display:none; color: var(--terra); font-weight: bold; margin-top: 10px;"></p>
+                <button class="btn" id="quiz-next-btn" onclick="resumeGame()">LANJUT</button>
+            </div>
+        </div>
+
+        <div id="game-over" class="overlay">
+            <h1 style="color: #f00;">GAME OVER</h1>
+            <p>Skor Akhir: <span id="final-score">0</span></p>
+            <button class="btn" onclick="retryLevel()">COBA LAGI</button>
+            <button class="btn" onclick="showOverlay('main-menu')">MENU UTAMA</button>
+        </div>
+
+        <div id="level-complete" class="overlay">
+            <h1>POS SELESAI! 🎉</h1>
+            <p>Skor: <span id="level-score">0</span></p>
+            <button class="btn" id="next-level-btn" onclick="nextLevel()">NEXT LEVEL</button>
+            <button class="btn" onclick="goMainMenu()">MENU UTAMA</button>
+        </div>
+
+        <div id="win-screen" class="overlay">
+            <h1>🎉 SELAMAT! 🎉</h1>
+            <p>Kamu adalah Penjelajah IPS Sejati! 🏆</p>
+            <p>Total Skor: <span id="win-score">0</span></p>
+            <button class="btn" onclick="goMainMenu()">MENU UTAMA</button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

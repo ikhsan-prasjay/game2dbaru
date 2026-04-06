@@ -1,0 +1,301 @@
+:root {
+    --terra: #C1440E;
+    --gold: #F5C518;
+    --green: #2D6A2D;
+    --blue: #1A6BAA;
+    --cream: #FFF8E7;
+    --dark: #222222;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--dark);
+    font-family: 'Press Start 2P', cursive;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: var(--cream);
+    overflow: hidden;
+    touch-action: none;
+}
+
+#game-container {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    aspect-ratio: 2 / 1;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(26, 107, 170, 0.4);
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: var(--blue);
+    image-rendering: auto;
+}
+
+/* Overlays with Blur */
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    text-align: center;
+    z-index: 10;
+}
+
+.overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Modal Content Animation */
+.overlay > *:not(h1):not(.btn):not(#flash-overlay) {
+    transform: scale(0.85);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+}
+
+.overlay.active > *:not(h1):not(.btn):not(#flash-overlay) {
+    transform: scale(1);
+    opacity: 1;
+}
+
+h1, h2, h3 {
+    margin: 10px 0;
+    line-height: 1.4;
+    text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.8);
+}
+
+h1 {
+    color: var(--gold);
+    font-size: 32px;
+    animation: float 3s ease-in-out infinite;
+    text-shadow: 4px 4px 0 rgba(0, 0, 0, 0.8), 0 0 15px rgba(245, 197, 24, 0.5);
+}
+
+h2 {
+    color: var(--gold);
+    font-size: 20px;
+}
+
+p {
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
+    font-size: 10px;
+    line-height: 1.6;
+    max-width: 80%;
+}
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+    100% { transform: translateY(0px); }
+}
+
+/* Professional Buttons */
+.btn {
+    background: linear-gradient(to bottom, var(--terra), #9e3609);
+    color: var(--cream);
+    font-family: inherit;
+    border: 3px solid #fff;
+    border-radius: 8px;
+    padding: 15px 20px;
+    margin: 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-size: 12px;
+    box-shadow: 0 6px 0 #6e2506, 0 8px 15px rgba(0, 0, 0, 0.5);
+    transition: all 0.15s ease;
+}
+
+.btn:active {
+    transform: translateY(6px);
+    box-shadow: 0 0 0 #6e2506, 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.btn:hover:not(:disabled) {
+    filter: brightness(1.15);
+    box-shadow: 0 6px 0 #6e2506, 0 8px 20px rgba(193, 68, 14, 0.6);
+}
+
+.btn:disabled {
+    background: #555;
+    box-shadow: 0 6px 0 #333;
+    border-color: #888;
+    transform: none;
+    cursor: not-allowed;
+    filter: none;
+}
+
+/* HUD */
+#hud {
+    position: absolute;
+    top: 15px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    z-index: 5;
+    pointer-events: none;
+    font-size: 12px;
+    text-shadow: 2px 2px 0 #000;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+#hud.active {
+    opacity: 1;
+}
+
+#lives {
+    color: #ff4d4d;
+    animation: pulseLife 1s infinite alternate;
+    display: inline-block;
+    text-shadow: 0 0 8px rgba(255, 77, 77, 0.6);
+}
+
+@keyframes pulseLife {
+    from { transform: scale(1); }
+    to { transform: scale(1.1); }
+}
+
+#score-display {
+    color: var(--gold);
+}
+
+/* Cards */
+.level-cards {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.card {
+    background: linear-gradient(to bottom, var(--green), #1b451b);
+    border: 4px solid var(--cream);
+    border-radius: 12px;
+    padding: 20px;
+    width: 160px;
+    cursor: pointer;
+    box-shadow: 0 8px 0 #0f260f, 0 10px 15px rgba(0, 0, 0, 0.5);
+    transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+}
+
+.card.locked {
+    background: linear-gradient(to bottom, #555, #333);
+    box-shadow: 0 8px 0 #222;
+    border-color: #888;
+    cursor: not-allowed;
+}
+
+.card:hover:not(.locked) {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 0 #0f260f, 0 15px 25px rgba(45, 106, 45, 0.5);
+    filter: brightness(1.1);
+}
+
+/* Quiz UI */
+.quiz-card {
+    background: var(--cream);
+    color: var(--dark);
+    border-radius: 16px;
+    padding: 30px;
+    width: 80%;
+    max-width: 500px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(193, 68, 14, 0.3);
+    border: 5px solid var(--terra);
+}
+
+.quiz-card h2 {
+    color: var(--terra);
+    text-shadow: none;
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.quiz-card p {
+    color: var(--dark);
+    text-shadow: none;
+    font-size: 14px;
+    margin-bottom: 25px;
+    width: 100%;
+}
+
+.quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.opt-btn {
+    background: var(--blue);
+    color: var(--cream);
+    border: none;
+    border-radius: 8px;
+    padding: 15px;
+    font-family: inherit;
+    font-size: 11px;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 0 5px 0 #0d3b61;
+    transition: all 0.15s ease;
+    line-height: 1.4;
+}
+
+.opt-btn:active:not(:disabled) {
+    transform: translateY(5px);
+    box-shadow: 0 0 0 #0d3b61;
+}
+
+.opt-btn:hover:not(:disabled) {
+    background: #2389d7;
+    transform: translateY(-2px);
+    box-shadow: 0 7px 0 #0d3b61, 0 5px 10px rgba(26, 107, 170, 0.4);
+}
+
+.opt-btn:disabled {
+    background: #555;
+    box-shadow: 0 5px 0 #333;
+    cursor: default;
+    color: #ccc;
+    transform: none !important;
+}
+
+/* Flash Screen */
+#flash-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 0, 0, 0.4);
+    z-index: 20;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.1s;
+}
+
+/* Next Button hidden initially */
+#quiz-next-btn {
+    display: none;
+    margin-top: 20px;
+    width: 100%;
+}
