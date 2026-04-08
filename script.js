@@ -1,5 +1,6 @@
-/** * BRAIN QUEST - PROFESSIONAL 2D ENGINE (FINAL DEFINITIVE)
+/** * BRAIN QUEST - PROFESSIONAL 2D ENGINE
  * WIDESCREEN | Mobile Touch | Alive Clouds | Ducking | Smart Auto-Tiling
+ * UPDATE: Bigger Character & Smoother Speed!
  */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -24,7 +25,6 @@ const ASSETS = {
     tiles: {} 
 };
 
-// Pastikan lokasi file ini persis dengan folder assets milikmu!
 ASSETS.playerIdle.src = 'assets/character_purple_idle.svg'; ASSETS.playerWalk1.src = 'assets/character_purple_walk_a.svg'; ASSETS.playerWalk2.src = 'assets/character_purple_walk_b.svg'; ASSETS.playerJump.src = 'assets/character_purple_jump.svg'; ASSETS.playerHit.src = 'assets/character_purple_hit.svg'; ASSETS.playerDuck.src = 'assets/character_purple_duck.svg'; 
 ASSETS.slime.src = 'assets/slime_walk.svg'; ASSETS.spike.src = 'assets/spikes.svg'; ASSETS.bee.src = 'assets/bee.svg';           
 ASSETS.flag.src = 'assets/flag_yellow.svg'; ASSETS.flagA.src = 'assets/flag_yellow_a.svg'; ASSETS.flagB.src = 'assets/flag_yellow_b.svg'; 
@@ -47,13 +47,13 @@ const QUESTIONS = {
     3: [ { q: "Indonesia memproklamasikan kemerdekaan pada tanggal…", opts: ["1 Juni 1945", "17 Agustus 1945", "20 Mei 1908", "28 Oktober 1928"], ans: 1 }, { q: "Siapakah proklamator kemerdekaan Indonesia?", opts: ["Soeharto & Habibie", "Cut Nyak Dien & Kartini", "Soekarno & Hatta", "Gajah Mada & Hayam Wuruk"], ans: 2 }, { q: "Pancasila sebagai dasar negara dirumuskan oleh…", opts: ["Moh. Yamin", "Soepomo", "Soekarno", "Hatta"], ans: 2 } ]
 };
 
+// KECEPATAN LEVEL DIKURANGI AGAR ENAK DIMAINKAN
 const LEVELS = { 
-    1: { name: "Mengenal Lingkungan", bg: "village", maxSpeed: 600, spawnGap: 800, innerGap: 350, patterns: [ [0], [3], [0, 0], [3, 0] ] },
-    2: { name: "Sosial & Budaya", bg: "sawah", maxSpeed: 750, spawnGap: 550, innerGap: 300, patterns: [ [0, 1], [3, 1], [4, 0], [1, 0], [3, 3] ] },
-    3: { name: "Sejarah", bg: "temple", maxSpeed: 900, spawnGap: 400, innerGap: 280, patterns: [ [0, 2], [4, 2], [5], [3, 0, 1], [0, 1, 0, 3], [5, 0] ] }
+    1: { name: "Mengenal Lingkungan", bg: "village", maxSpeed: 450, spawnGap: 800, innerGap: 350, patterns: [ [0], [3], [0, 0], [3, 0] ] },
+    2: { name: "Sosial & Budaya", bg: "sawah", maxSpeed: 500, spawnGap: 550, innerGap: 300, patterns: [ [0, 1], [3, 1], [4, 0], [1, 0], [3, 3] ] },
+    3: { name: "Sejarah", bg: "temple", maxSpeed: 550, spawnGap: 400, innerGap: 280, patterns: [ [0, 2], [4, 2], [5], [3, 0, 1], [0, 1, 0, 3], [5, 0] ] }
 };
 
-/* --- FUNGSI FULLSCREEN --- */
 function toggleFullScreen() {
     if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(err => { console.log(`Gagal fullscreen: ${err.message}`); }); } 
     else { if (document.exitFullscreen) document.exitFullscreen(); }
@@ -67,7 +67,29 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const sfx = { play(freq, type, dur, vol = 0.1) { try { if (audioCtx.state === 'suspended') audioCtx.resume(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime); gain.gain.setValueAtTime(vol, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + dur); } catch(e) { } }, jump() { this.play(400, 'square', 0.15, 0.05); }, hit() { this.play(150, 'sawtooth', 0.3, 0.1); }, coin() { this.play(800, 'sine', 0.1, 0.05); }, over() { this.play(200, 'square', 0.5, 0.1); } };
 
 class Player {
-    constructor(cfgSpeed) { this.w = 40; this.h = 48; this.x = 200; this.y = GROUND_Y - this.h; this.vy = 0; this.vx = 0; this.maxSpeed = cfgSpeed; this.accel = 5000; this.friction = 0.85; this.grav = 1600; this.fallGravMulti = 1.8; this.jumpForce = -800; this.grounded = true; this.squash = 0; this.animTimer = 0; this.facingRight = true; this.idleTimer = 0; this.isDucking = false; }
+    constructor(cfgSpeed) { 
+        // UKURAN KARAKTER DIPERBESAR (56x68)
+        this.w = 56; 
+        this.h = 68; 
+        this.x = 200; 
+        this.y = GROUND_Y - this.h; 
+        
+        this.vy = 0; 
+        this.vx = 0; 
+        this.maxSpeed = cfgSpeed; 
+        this.accel = 3500; // TARIKAN LARI LEBIH HALUS (Diturunkan dari 5000)
+        this.friction = 0.85; 
+        this.grav = 1600; 
+        this.fallGravMulti = 1.8; 
+        this.jumpForce = -800; 
+        
+        this.grounded = true; 
+        this.squash = 0; 
+        this.animTimer = 0; 
+        this.facingRight = true; 
+        this.idleTimer = 0; 
+        this.isDucking = false; 
+    }
     jump() { if (this.grounded && !this.isDucking) { this.vy = this.jumpForce; this.grounded = false; this.squash = -8; sfx.jump(); spawnDust(this.x + this.w/2 - cameraX, this.y + this.h); } }
     update(dt) {
         this.isDucking = (keys.down && this.grounded);
@@ -87,12 +109,17 @@ class Player {
     }
     draw(ctx, camX) {
         let sx = Math.floor(this.x - camX); let sq = this.squash; let bSq = 0;
-        ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(sx + this.w/2, GROUND_Y, this.w/2, 4, 0, 0, Math.PI*2); ctx.fill();
+        // Bayangan diperbesar menyesuaikan karakter
+        ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(sx + this.w/2, GROUND_Y, this.w/2, 6, 0, 0, Math.PI*2); ctx.fill();
         let frame = ASSETS.playerIdle;
         if (currentState === STATE.RESPAWNING || currentState === STATE.GAME_OVER) frame = ASSETS.playerHit; else if (this.isDucking) frame = ASSETS.playerDuck; else if (!this.grounded) frame = ASSETS.playerJump; else if (Math.abs(this.vx) > 10) frame = (Math.floor(this.animTimer/0.15)%2 === 0) ? ASSETS.playerWalk1 : ASSETS.playerWalk2; else { bSq = Math.sin(this.idleTimer*4)*1.5; if (this.idleTimer > 2 && this.idleTimer % 3.5 < 0.15) frame = ASSETS.playerHit; }
         if (frame.complete) { let tSq = sq + bSq; if (this.isDucking) tSq = 0; let cH = this.h - tSq; let cW = this.w + (tSq*0.5); let aX = sx - (cW - this.w)/2; ctx.save(); if (!this.facingRight) { ctx.translate(aX + cW/2, 0); ctx.scale(-1, 1); ctx.drawImage(frame, -cW/2, Math.floor(this.y + tSq), cW, cH); } else ctx.drawImage(frame, aX, Math.floor(this.y + tSq), cW, cH); ctx.restore(); }
     }
-    getHitbox() { if (this.isDucking) return { x: this.x + 5, y: this.y + 24, w: this.w - 10, h: this.h - 24 }; return { x: this.x + 5, y: this.y + 5, w: this.w - 10, h: this.h - 5 }; }
+    getHitbox() { 
+        // Hitbox dipotong agar adil saat nunduk
+        if (this.isDucking) return { x: this.x + 8, y: this.y + 36, w: this.w - 16, h: this.h - 36 }; 
+        return { x: this.x + 8, y: this.y + 8, w: this.w - 16, h: this.h - 16 }; 
+    }
 }
 
 class Obstacle {
@@ -120,9 +147,6 @@ class Particle {
 }
 function spawnDust(sx, sy) { for (let i = 0; i < 5; i++) particles.push(new Particle(sx + (Math.random()*16-8), sy, '#d3d3d3', true)); }
 
-/* ==========================================================
-   PARALLAX BACKGROUND (Awan Gerak Pakai Waktu Mesin 100%)
-   ========================================================== */
 class ParallaxBg {
     constructor(type) { this.type = type; this.skyGrad = ctx.createLinearGradient(0, 0, 0, H); if (this.type === 'village') { this.skyGrad.addColorStop(0, '#4aaeff'); this.skyGrad.addColorStop(1, '#a6d9ff'); } else if (this.type === 'sawah') { this.skyGrad.addColorStop(0, '#ff7b54'); this.skyGrad.addColorStop(1, '#ffd56b'); } else if (this.type === 'temple') { this.skyGrad.addColorStop(0, '#e8a158'); this.skyGrad.addColorStop(1, '#f2d49b'); } else { this.skyGrad.addColorStop(0, '#2d1e2f'); this.skyGrad.addColorStop(1, '#852b47'); } }
     drawLayer(ctx, img, camX, speed, targetHeight, yPos, autoOffset = 0) {
@@ -134,10 +158,8 @@ class ParallaxBg {
         ctx.fillStyle = this.skyGrad; ctx.fillRect(0, 0, W, H); 
         let f = ASSETS.bgHillsFade, c = ASSETS.bgHillsColor; if (this.type === 'sawah') { f = ASSETS.bgTreesFade; c = ASSETS.bgTreesColor; } else if (this.type === 'temple') { f = ASSETS.bgDesertFade; c = ASSETS.bgDesertColor; } else if (this.type === 'menu') { f = ASSETS.bgMushroomsFade; c = ASSETS.bgMushroomsColor; }
         
-        // Sedot waktu dari Browser (Jaminan awan gerak terus)
         let mesinWaktu = performance.now() / 1000;
-        
-        this.drawLayer(ctx, ASSETS.bgClouds, camX, 0.05, H, 0, mesinWaktu * 50); // Kecepatan 50!
+        this.drawLayer(ctx, ASSETS.bgClouds, camX, 0.05, H, 0, mesinWaktu * 50); 
         this.drawLayer(ctx, f, camX, 0.3, H, 0); 
         this.drawLayer(ctx, c, camX, 0.5, H, 0);
     }
@@ -204,11 +226,9 @@ function nextLevel() { initGame(currentLevel + 1); } function retryLevel() { ini
 /* --- CONTROLS: KEYBOARD & MOBILE --- */
 const keys = { left: false, right: false, jump: false, down: false };
 
-// 1. Keyboard
 window.addEventListener('keydown', e => { if (['Space', 'ArrowUp', 'KeyW', 'w', 'W'].includes(e.code) || ['w', 'W'].includes(e.key)) { keys.jump = true; player.jump(); e.preventDefault(); } if (['ArrowLeft', 'KeyA', 'a', 'A'].includes(e.code) || ['a', 'A'].includes(e.key)) keys.left = true; if (['ArrowRight', 'KeyD', 'd', 'D'].includes(e.code) || ['d', 'D'].includes(e.key)) keys.right = true; if (['ArrowDown', 'KeyS', 's', 'S'].includes(e.code) || ['s', 'S'].includes(e.key)) keys.down = true; }, { passive: false });
 window.addEventListener('keyup', e => { if (['Space', 'ArrowUp', 'KeyW', 'w', 'W'].includes(e.code) || ['w', 'W'].includes(e.key)) keys.jump = false; if (['ArrowLeft', 'KeyA', 'a', 'A'].includes(e.code) || ['a', 'A'].includes(e.key)) keys.left = false; if (['ArrowRight', 'KeyD', 'd', 'D'].includes(e.code) || ['d', 'D'].includes(e.key)) keys.right = false; if (['ArrowDown', 'KeyS', 's', 'S'].includes(e.code) || ['s', 'S'].includes(e.key)) keys.down = false; });
 
-// 2. Mobile Joypad Binding
 const btnLeft = document.getElementById('btn-left'); const btnRight = document.getElementById('btn-right');
 const btnJump = document.getElementById('btn-jump'); const btnDuck = document.getElementById('btn-duck');
 
