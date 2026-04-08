@@ -1,29 +1,29 @@
 body {
-    margin: 0; padding: 0; background-color: #000; /* Warna hitam bioskop */
+    margin: 0; padding: 0; background-color: #000; 
     color: #fff; font-family: 'Press Start 2P', cursive;
     display: flex; justify-content: center; align-items: center;
     height: 100vh; width: 100vw; overflow: hidden;
+    touch-action: none; /* Mencegah layar scroll di HP */
 }
 
-/* Widescreen Game Container Responsive */
+/* Widescreen Game Container Responsive (Anti Gepeng) */
 #game-container {
     position: relative; 
     width: 100vw; 
     height: 100vh;     
-    background-color: #000; 
+    background-color: #11111b; 
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-/* KANVAS AKAN MELAR MENGIKUTI LAYAR! */
 canvas { 
     width: 100%; 
     height: 100%; 
-    object-fit: contain; /* Ini kunci utamanya biar proporsinya pas dan gede! */
+    object-fit: contain; 
 }
 
-/* Kunci Mati Semua Layar Overlay ke Tengah */
+/* OVERLAYS (DIJAMIN TENGAH) */
 .overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.85); z-index: 10;
@@ -31,21 +31,20 @@ canvas {
     justify-content: center !important; align-items: center !important;
     opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
 }
-.overlay.active { opacity: 1; pointer-events: auto; }
+.overlay.active { opacity: 1 !important; pointer-events: auto !important; }
 
 h1, h2 { text-shadow: 3px 3px 0px #000; text-align: center; line-height: 1.5; margin: 0;}
 
-/* Wadah Kotak Level */
+/* --- KOTAK PILIH LEVEL --- */
 #levels-container {
     display: flex !important; flex-direction: row !important;
     justify-content: center !important; align-items: center !important;
-    gap: 40px !important; width: 100%; margin: 0 auto;
+    gap: 30px !important; width: 100%; margin: 0 auto; flex-wrap: wrap;
 }
 
-/* Desain Kotak Level Modern */
 .card {
     background: linear-gradient(135deg, #4aaeff, #318ce7);
-    border-radius: 20px; padding: 30px 20px; width: 220px; 
+    border-radius: 20px; padding: 25px 15px; width: 180px; 
     box-shadow: 0 10px 20px rgba(0,0,0,0.4); border: 4px solid #ffffff;
     text-align: center; color: #ffffff; cursor: pointer;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -54,10 +53,10 @@ h1, h2 { text-shadow: 3px 3px 0px #000; text-align: center; line-height: 1.5; ma
 .card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.6); }
 .card.locked { background: linear-gradient(135deg, #7f8c8d, #95a5a6); cursor: not-allowed; border-color: #bdc3c7; opacity: 0.8; }
 .card.locked:hover { transform: none; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
-.card h3 { font-size: 22px; font-weight: 900; margin-bottom: 15px; font-family: 'Press Start 2P', cursive; text-shadow: 2px 2px 0px rgba(0,0,0,0.5); }
-.card p { font-size: 16px; font-weight: 700; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); margin: 0; }
+.card h3 { font-size: 18px; font-weight: 900; margin-bottom: 15px; font-family: 'Press Start 2P', cursive; text-shadow: 2px 2px 0px rgba(0,0,0,0.5); }
+.card p { font-size: 14px; font-weight: 700; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); margin: 0; }
 
-/* Tombol Standar */
+/* --- TOMBOL --- */
 button {
     background-color: #e74c3c; color: #fff; border: 4px solid #c0392b; border-radius: 12px;
     padding: 15px 30px; font-family: 'Press Start 2P', cursive; font-size: 14px;
@@ -66,29 +65,29 @@ button {
 button:hover { background-color: #ff5e4d; transform: translateY(2px); box-shadow: 0 4px 0px #962d22; }
 button:active { transform: translateY(6px); box-shadow: none; }
 
-/* UI KUIS POP-UP */
+/* --- UI KUIS POP-UP --- */
 .quiz-box {
     background: linear-gradient(135deg, #ffffff, #f0f4f8); border-radius: 20px;
-    padding: 40px; box-shadow: 0 25px 60px rgba(0,0,0,0.6), inset 0 0 0 4px #4aaeff;
-    text-align: center; width: 90%; max-width: 550px;
+    padding: 30px; box-shadow: 0 25px 60px rgba(0,0,0,0.6), inset 0 0 0 4px #4aaeff;
+    text-align: center; width: 90%; max-width: 500px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 @keyframes popIn { 0% { transform: scale(0.7); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
-#quiz-question { font-size: 24px; color: #2c3e50; margin-bottom: 30px; line-height: 1.5; font-weight: 800; text-shadow: none;}
-#quiz-options { display: flex; flex-direction: column; gap: 15px; }
+#quiz-question { font-size: 22px; color: #2c3e50; margin-bottom: 25px; line-height: 1.4; font-weight: 800; text-shadow: none;}
+#quiz-options { display: flex; flex-direction: column; gap: 12px; }
 
 .opt-btn {
     background-color: #4aaeff; color: white; border: none; border-radius: 12px;
-    padding: 16px 25px; width: 100%; font-size: 16px; font-weight: bold;
-    cursor: pointer; text-align: left; transition: all 0.2s ease-in-out;
+    padding: 14px 20px; width: 100%; font-size: 16px; font-weight: bold;
+    cursor: pointer; text-align: left; transition: all 0.2s ease;
     box-shadow: 0 4px 6px rgba(74, 174, 255, 0.3); font-family: 'Segoe UI', sans-serif;
 }
-.opt-btn:hover { background-color: #318ce7; transform: translateY(-3px); box-shadow: 0 8px 15px rgba(74, 174, 255, 0.4); }
+.opt-btn:hover { background-color: #318ce7; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(74, 174, 255, 0.4); }
 .opt-btn:active { transform: translateY(1px); box-shadow: 0 2px 4px rgba(74, 174, 255, 0.3); }
 
-#quiz-feedback { font-size: 20px; font-weight: 900; margin-top: 25px; text-transform: uppercase; letter-spacing: 1px; }
+#quiz-feedback { font-size: 18px; font-weight: 900; margin-top: 20px; text-transform: uppercase; letter-spacing: 1px; }
 
 /* HUD Header */
 #hud {
@@ -97,6 +96,36 @@ button:active { transform: translateY(6px); box-shadow: none; }
     z-index: 5; pointer-events: none; opacity: 0; transition: opacity 0.3s;
 }
 #hud.active { opacity: 1; }
-.hud-box { background: rgba(0,0,0,0.6); padding: 12px 25px; border-radius: 10px; border: 3px solid #fff; font-size: 16px; text-shadow: 2px 2px 0px #000; }
+.hud-box { background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 10px; border: 3px solid #fff; font-size: 14px; text-shadow: 2px 2px 0px #000; }
 
 #flash-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255,0,0,0.4); z-index: 20; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+
+/* =========================================================
+   MOBILE CONTROLS (VIRTUAL JOYPAD)
+   ========================================================= */
+#mobile-controls {
+    position: absolute; bottom: 30px; left: 0; width: 100%;
+    display: flex; justify-content: space-between; padding: 0 40px;
+    box-sizing: border-box; z-index: 100; pointer-events: none;
+}
+
+.d-pad, .action-pad { display: flex; gap: 20px; pointer-events: auto; }
+
+.control-btn {
+    background: rgba(255, 255, 255, 0.15); border: 2px solid rgba(255, 255, 255, 0.5);
+    color: white; font-size: 24px; width: 65px; height: 65px; border-radius: 50%;
+    display: flex; justify-content: center; align-items: center;
+    backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+    user-select: none; -webkit-user-select: none; touch-action: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: background 0.1s, transform 0.1s;
+    cursor: pointer; font-family: sans-serif;
+}
+
+.control-btn:active, .control-btn.active {
+    background: rgba(255, 255, 255, 0.5); transform: scale(0.85);
+}
+
+/* Sembunyikan tombol virtual jika dimainkan di PC */
+@media (min-width: 1025px) {
+    #mobile-controls { display: none; }
+}

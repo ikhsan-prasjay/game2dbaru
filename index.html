@@ -1,15 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brain Quest - Fullscreen Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Brain Quest - Ultimate Mobile Edition</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Segoe+UI:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
+
+        <div id="mobile-controls">
+            <div class="d-pad">
+                <div id="btn-left" class="control-btn">◀</div>
+                <div id="btn-right" class="control-btn">▶</div>
+            </div>
+            <div class="action-pad">
+                <div id="btn-duck" class="control-btn">▼</div>
+                <div id="btn-jump" class="control-btn">▲</div>
+            </div>
+        </div>
 
         <div id="hud">
             <div class="hud-box">NYAWA: <span id="lives">❤️❤️❤️</span></div>
@@ -18,10 +29,10 @@
         </div>
 
         <div id="main-menu" class="overlay active">
-            <h1 style="font-size: 50px; color: #f1c40f; margin-bottom: 20px;">BRAIN QUEST</h1>
+            <h1 style="font-size: 45px; color: #f1c40f; margin-bottom: 20px;">BRAIN QUEST</h1>
             <h2 style="margin-bottom: 40px;">Petualangan Pengetahuan!</h2>
             
-            <button onclick="toggleFullScreen()" style="background-color: #2980b9; border-color: #1a5276; margin-bottom: 20px;">🖵 MODE LAYAR PENUH (F11)</button>
+            <button onclick="toggleFullScreen()" style="background-color: #2980b9; border-color: #1a5276; margin-bottom: 20px;">🖵 MODE LAYAR PENUH</button>
             <br>
             <button onclick="showLevelSelect()" style="transform: scale(1.1); padding: 20px 40px;">MULAI PETUALANGAN</button>
         </div>
@@ -61,6 +72,7 @@
 
         <div id="flash-overlay"></div>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>

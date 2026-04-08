@@ -1,17 +1,15 @@
-/** * BRAIN QUEST - PROFESSIONAL 2D ENGINE
- * FULLSCREEN RESPONSIVE | Alive Clouds | Ducking | Auto-Tiling
+/** * BRAIN QUEST - PROFESSIONAL 2D ENGINE (FINAL DEFINITIVE)
+ * WIDESCREEN | Mobile Touch | Alive Clouds | Ducking | Smart Auto-Tiling
  */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// INTERNAL RESOLUTION (16:9) - CSS yang akan melebarkannya
 const TARGET_W = 1024;
 const TARGET_H = 576; 
 const dpr = window.devicePixelRatio || 1;
 
 canvas.width = TARGET_W * dpr;
 canvas.height = TARGET_H * dpr;
-// HAPUS canvas.style.width/height di sini agar CSS 100vw bisa bekerja!
 ctx.scale(dpr, dpr);
 ctx.imageSmoothingEnabled = true; 
 ctx.imageSmoothingQuality = 'high';
@@ -26,6 +24,7 @@ const ASSETS = {
     tiles: {} 
 };
 
+// Pastikan lokasi file ini persis dengan folder assets milikmu!
 ASSETS.playerIdle.src = 'assets/character_purple_idle.svg'; ASSETS.playerWalk1.src = 'assets/character_purple_walk_a.svg'; ASSETS.playerWalk2.src = 'assets/character_purple_walk_b.svg'; ASSETS.playerJump.src = 'assets/character_purple_jump.svg'; ASSETS.playerHit.src = 'assets/character_purple_hit.svg'; ASSETS.playerDuck.src = 'assets/character_purple_duck.svg'; 
 ASSETS.slime.src = 'assets/slime_walk.svg'; ASSETS.spike.src = 'assets/spikes.svg'; ASSETS.bee.src = 'assets/bee.svg';           
 ASSETS.flag.src = 'assets/flag_yellow.svg'; ASSETS.flagA.src = 'assets/flag_yellow_a.svg'; ASSETS.flagB.src = 'assets/flag_yellow_b.svg'; 
@@ -56,15 +55,8 @@ const LEVELS = {
 
 /* --- FUNGSI FULLSCREEN --- */
 function toggleFullScreen() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => {
-            console.log(`Error attempting to enable fullscreen: ${err.message}`);
-        });
-    } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        }
-    }
+    if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(err => { console.log(`Gagal fullscreen: ${err.message}`); }); } 
+    else { if (document.exitFullscreen) document.exitFullscreen(); }
 }
 
 function showOverlay(id) { document.querySelectorAll('.overlay').forEach(el => el.classList.remove('active')); if (id) { document.getElementById(id).classList.add('active'); document.getElementById('hud').classList.remove('active'); } }
@@ -129,7 +121,7 @@ class Particle {
 function spawnDust(sx, sy) { for (let i = 0; i < 5; i++) particles.push(new Particle(sx + (Math.random()*16-8), sy, '#d3d3d3', true)); }
 
 /* ==========================================================
-   PARALLAX BACKGROUND (DIJAMIN AWAN GERAK PAKE WAKTU MESIN)
+   PARALLAX BACKGROUND (Awan Gerak Pakai Waktu Mesin 100%)
    ========================================================== */
 class ParallaxBg {
     constructor(type) { this.type = type; this.skyGrad = ctx.createLinearGradient(0, 0, 0, H); if (this.type === 'village') { this.skyGrad.addColorStop(0, '#4aaeff'); this.skyGrad.addColorStop(1, '#a6d9ff'); } else if (this.type === 'sawah') { this.skyGrad.addColorStop(0, '#ff7b54'); this.skyGrad.addColorStop(1, '#ffd56b'); } else if (this.type === 'temple') { this.skyGrad.addColorStop(0, '#e8a158'); this.skyGrad.addColorStop(1, '#f2d49b'); } else { this.skyGrad.addColorStop(0, '#2d1e2f'); this.skyGrad.addColorStop(1, '#852b47'); } }
@@ -142,10 +134,10 @@ class ParallaxBg {
         ctx.fillStyle = this.skyGrad; ctx.fillRect(0, 0, W, H); 
         let f = ASSETS.bgHillsFade, c = ASSETS.bgHillsColor; if (this.type === 'sawah') { f = ASSETS.bgTreesFade; c = ASSETS.bgTreesColor; } else if (this.type === 'temple') { f = ASSETS.bgDesertFade; c = ASSETS.bgDesertColor; } else if (this.type === 'menu') { f = ASSETS.bgMushroomsFade; c = ASSETS.bgMushroomsColor; }
         
-        // Sedot waktu langsung dari jantung browser, ga peduli loop macet tetep jalan!
-        let gerakAwan = performance.now() / 1000;
+        // Sedot waktu dari Browser (Jaminan awan gerak terus)
+        let mesinWaktu = performance.now() / 1000;
         
-        this.drawLayer(ctx, ASSETS.bgClouds, camX, 0.05, H, 0, gerakAwan * 30); 
+        this.drawLayer(ctx, ASSETS.bgClouds, camX, 0.05, H, 0, mesinWaktu * 50); // Kecepatan 50!
         this.drawLayer(ctx, f, camX, 0.3, H, 0); 
         this.drawLayer(ctx, c, camX, 0.5, H, 0);
     }
@@ -172,7 +164,7 @@ function drawDynamicGround(ctx, camX, type) {
 
 function resetGame(isDead = false) { if (!isDead) { let cfg = LEVELS[currentLevel]; player = new Player(cfg.maxSpeed); obstacles = []; checkpoints = []; particles = []; pits = []; bgLayers = new ParallaxBg(cfg.bg); cameraX = 0; nextSpawnX = 800; cpSpawnedThisLevel = 0; quizActiveIndex = -1; levelScore = 0; lives = 3; lastCheckpointX = 200; } }
 function initGame(level) { currentLevel = level; resetGame(false); currentState = STATE.PLAYING; showOverlay(null); document.getElementById('hud').classList.add('active'); updateHUD(); lastTime = performance.now(); if (currentFrameId) cancelAnimationFrame(currentFrameId); currentFrameId = requestAnimationFrame(gameLoop); }
-function stopGame() { currentState = STATE.RESPAWNING; let f = document.getElementById('flash-overlay'); f.style.opacity = '1'; setTimeout(respawn, 1000); }
+function stopGame() { currentState = STATE.RESPAWNING; let f = document.getElementById('flash-overlay'); f.style.backgroundColor = 'rgba(0,0,0,0.7)'; f.style.opacity = '1'; setTimeout(respawn, 1000); }
 function respawn() { player.x = lastCheckpointX; player.y = GROUND_Y - player.h; player.vx = 0; player.vy = 0; cameraX = Math.max(0, player.x - 200); obstacles = obstacles.filter(o => Math.abs(o.x - player.x) > 400); document.getElementById('flash-overlay').style.opacity = '0'; updateHUD(); currentState = STATE.PLAYING; lastTime = performance.now(); }
 function gameOver() { currentState = STATE.GAME_OVER; sfx.over(); document.getElementById('final-score').innerText = totalScore + levelScore; unlockedLevels = 1; localStorage.setItem('bq_unlocked', 1); showOverlay('game-over'); }
 
@@ -209,12 +201,28 @@ function resumeGame() { if (quizActiveIndex >= 2) finishLevel(); else { showOver
 function finishLevel() { totalScore += levelScore; if (currentLevel < 3) { unlockedLevels = Math.max(unlockedLevels, currentLevel + 1); localStorage.setItem('bq_unlocked', unlockedLevels); showOverlay('level-complete'); } else showOverlay('win-screen'); }
 function nextLevel() { initGame(currentLevel + 1); } function retryLevel() { initGame(currentLevel); } function goMainMenu() { currentState = STATE.MENU; showOverlay('main-menu'); startMenuLoop(); }
 
+/* --- CONTROLS: KEYBOARD & MOBILE --- */
 const keys = { left: false, right: false, jump: false, down: false };
+
+// 1. Keyboard
 window.addEventListener('keydown', e => { if (['Space', 'ArrowUp', 'KeyW', 'w', 'W'].includes(e.code) || ['w', 'W'].includes(e.key)) { keys.jump = true; player.jump(); e.preventDefault(); } if (['ArrowLeft', 'KeyA', 'a', 'A'].includes(e.code) || ['a', 'A'].includes(e.key)) keys.left = true; if (['ArrowRight', 'KeyD', 'd', 'D'].includes(e.code) || ['d', 'D'].includes(e.key)) keys.right = true; if (['ArrowDown', 'KeyS', 's', 'S'].includes(e.code) || ['s', 'S'].includes(e.key)) keys.down = true; }, { passive: false });
 window.addEventListener('keyup', e => { if (['Space', 'ArrowUp', 'KeyW', 'w', 'W'].includes(e.code) || ['w', 'W'].includes(e.key)) keys.jump = false; if (['ArrowLeft', 'KeyA', 'a', 'A'].includes(e.code) || ['a', 'A'].includes(e.key)) keys.left = false; if (['ArrowRight', 'KeyD', 'd', 'D'].includes(e.code) || ['d', 'D'].includes(e.key)) keys.right = false; if (['ArrowDown', 'KeyS', 's', 'S'].includes(e.code) || ['s', 'S'].includes(e.key)) keys.down = false; });
-window.addEventListener('touchstart', e => { if (e.target.tagName !== 'BUTTON') { keys.jump = true; player.jump(); } }, { passive: false }); window.addEventListener('touchend', e => { if (e.target.tagName !== 'BUTTON') keys.jump = false; });
 
-bgLayers = new ParallaxBg('menu'); let demoCam = 0;
+// 2. Mobile Joypad Binding
+const btnLeft = document.getElementById('btn-left'); const btnRight = document.getElementById('btn-right');
+const btnJump = document.getElementById('btn-jump'); const btnDuck = document.getElementById('btn-duck');
+
+function setupMobileBtn(btn, keyName) {
+    if(!btn) return;
+    btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; if(keyName === 'jump') player.jump(); btn.classList.add('active'); }, { passive: false });
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; btn.classList.remove('active'); }, { passive: false });
+    btn.addEventListener('mousedown', (e) => { keys[keyName] = true; if(keyName === 'jump') player.jump(); btn.classList.add('active'); });
+    btn.addEventListener('mouseup', (e) => { keys[keyName] = false; btn.classList.remove('active'); });
+    btn.addEventListener('mouseleave', (e) => { keys[keyName] = false; btn.classList.remove('active'); });
+}
+setupMobileBtn(btnLeft, 'left'); setupMobileBtn(btnRight, 'right');
+setupMobileBtn(btnJump, 'jump'); setupMobileBtn(btnDuck, 'down');
+
 function startMenuLoop() {
     lastTime = performance.now(); pits = []; if (currentFrameId) cancelAnimationFrame(currentFrameId);
     currentFrameId = requestAnimationFrame(function loop(t) {
