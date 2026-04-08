@@ -8,6 +8,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Segoe+UI:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div id="portrait-warning">
+        <h1 style="font-size: 60px; margin-bottom: 10px;">📱</h1>
+        <h2 style="color: #f1c40f;">PUTAR HP ANDA!</h2>
+        <p>Game ini hanya dapat dimainkan dalam mode layar Mendatar (Landscape).<br><br>Silakan putar posisi HP Anda untuk mulai bermain.</p>
+    </div>
+
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
 
@@ -54,20 +60,20 @@
 
         <div id="game-over" class="overlay">
             <h1 style="color: #e74c3c;">YAHH, GAME OVER!</h1>
-            <h2>Skor Akhir: <span id="final-score">0</span></h2>
+            <h2>Skor Saat Ini: <span id="final-score">0</span></h2>
             <button onclick="showLevelSelect()">COBA LAGI</button>
         </div>
 
         <div id="level-complete" class="overlay">
             <h1 style="color: #2ecc71;">LEVEL SELESAI!</h1>
-            <h2>Poin Didapat: <span id="level-score">0</span></h2>
+            <h2>Poin Level Ini: <span id="level-score">0</span></h2>
             <button onclick="nextLevel()">LANJUT KE LEVEL BERIKUTNYA</button>
         </div>
 
         <div id="win-screen" class="overlay">
             <h1 style="color: #f1c40f;">SELAMAT! KAMU MENANG!</h1>
-            <h2>Total Skor Seluruh Level: <span id="win-score">0</span></h2>
-            <button onclick="goMainMenu()">KEMBALI KE MENU</button>
+            <h2>TOTAL SKOR AKHIR: <span id="win-score">0</span></h2>
+            <button onclick="goMainMenu()">KEMBALI KE MENU UTAMA</button>
         </div>
 
         <div id="flash-overlay"></div>

@@ -1,19 +1,12 @@
 /** * BRAIN QUEST - PROFESSIONAL 2D ENGINE
- * WIDESCREEN | Mobile Touch | Alive Clouds | Ducking | Smart Auto-Tiling
- * UPDATE: Bigger Character & Smoother Speed!
+ * FULLSCREEN RESPONSIVE | Alive Clouds | Safe Landing Fix | Score Fix
  */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-const TARGET_W = 1024;
-const TARGET_H = 576; 
-const dpr = window.devicePixelRatio || 1;
-
-canvas.width = TARGET_W * dpr;
-canvas.height = TARGET_H * dpr;
-ctx.scale(dpr, dpr);
-ctx.imageSmoothingEnabled = true; 
-ctx.imageSmoothingQuality = 'high';
+const TARGET_W = 1024; const TARGET_H = 576; const dpr = window.devicePixelRatio || 1;
+canvas.width = TARGET_W * dpr; canvas.height = TARGET_H * dpr; ctx.scale(dpr, dpr);
+ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
 
 const W = TARGET_W; const H = TARGET_H; const TILE_SIZE = 40; const GROUND_Y = H - 120; 
 
@@ -47,7 +40,6 @@ const QUESTIONS = {
     3: [ { q: "Indonesia memproklamasikan kemerdekaan pada tanggal…", opts: ["1 Juni 1945", "17 Agustus 1945", "20 Mei 1908", "28 Oktober 1928"], ans: 1 }, { q: "Siapakah proklamator kemerdekaan Indonesia?", opts: ["Soeharto & Habibie", "Cut Nyak Dien & Kartini", "Soekarno & Hatta", "Gajah Mada & Hayam Wuruk"], ans: 2 }, { q: "Pancasila sebagai dasar negara dirumuskan oleh…", opts: ["Moh. Yamin", "Soepomo", "Soekarno", "Hatta"], ans: 2 } ]
 };
 
-// KECEPATAN LEVEL DIKURANGI AGAR ENAK DIMAINKAN
 const LEVELS = { 
     1: { name: "Mengenal Lingkungan", bg: "village", maxSpeed: 450, spawnGap: 800, innerGap: 350, patterns: [ [0], [3], [0, 0], [3, 0] ] },
     2: { name: "Sosial & Budaya", bg: "sawah", maxSpeed: 500, spawnGap: 550, innerGap: 300, patterns: [ [0, 1], [3, 1], [4, 0], [1, 0], [3, 3] ] },
@@ -67,29 +59,7 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const sfx = { play(freq, type, dur, vol = 0.1) { try { if (audioCtx.state === 'suspended') audioCtx.resume(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime); gain.gain.setValueAtTime(vol, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + dur); } catch(e) { } }, jump() { this.play(400, 'square', 0.15, 0.05); }, hit() { this.play(150, 'sawtooth', 0.3, 0.1); }, coin() { this.play(800, 'sine', 0.1, 0.05); }, over() { this.play(200, 'square', 0.5, 0.1); } };
 
 class Player {
-    constructor(cfgSpeed) { 
-        // UKURAN KARAKTER DIPERBESAR (56x68)
-        this.w = 56; 
-        this.h = 68; 
-        this.x = 200; 
-        this.y = GROUND_Y - this.h; 
-        
-        this.vy = 0; 
-        this.vx = 0; 
-        this.maxSpeed = cfgSpeed; 
-        this.accel = 3500; // TARIKAN LARI LEBIH HALUS (Diturunkan dari 5000)
-        this.friction = 0.85; 
-        this.grav = 1600; 
-        this.fallGravMulti = 1.8; 
-        this.jumpForce = -800; 
-        
-        this.grounded = true; 
-        this.squash = 0; 
-        this.animTimer = 0; 
-        this.facingRight = true; 
-        this.idleTimer = 0; 
-        this.isDucking = false; 
-    }
+    constructor(cfgSpeed) { this.w = 56; this.h = 68; this.x = 200; this.y = GROUND_Y - this.h; this.vy = 0; this.vx = 0; this.maxSpeed = cfgSpeed; this.accel = 3500; this.friction = 0.85; this.grav = 1600; this.fallGravMulti = 1.8; this.jumpForce = -800; this.grounded = true; this.squash = 0; this.animTimer = 0; this.facingRight = true; this.idleTimer = 0; this.isDucking = false; }
     jump() { if (this.grounded && !this.isDucking) { this.vy = this.jumpForce; this.grounded = false; this.squash = -8; sfx.jump(); spawnDust(this.x + this.w/2 - cameraX, this.y + this.h); } }
     update(dt) {
         this.isDucking = (keys.down && this.grounded);
@@ -100,26 +70,33 @@ class Player {
         this.animTimer += dt; if (this.grounded && Math.abs(this.vx) < 5 && !this.isDucking) this.idleTimer += dt; else this.idleTimer = 0;
         this.x += this.vx * dt; if (this.x < cameraX) { this.x = cameraX; this.vx = 0; }
         let targetX = this.x - W * 0.35; if (targetX > cameraX) cameraX += (targetX - cameraX) * 12 * dt;
+        
         let curGrav = this.grav; if (this.vy > 0) curGrav *= this.fallGravMulti; else if (!keys.jump && this.vy < 0) curGrav *= 2.5;
         this.vy += curGrav * dt; this.y += this.vy * dt;
+        
         let overPit = false; let px = this.x + this.w/2; for (let p of pits) if (px > p.x && px < p.x + p.w) overPit = true;
-        if (this.y + this.h >= GROUND_Y && this.y + this.h <= GROUND_Y + 25 && this.vy >= 0 && !overPit) { if (!this.grounded) { spawnDust(this.x + this.w/2 - cameraX, this.y + this.h); this.squash = 10; } this.y = GROUND_Y - this.h; this.vy = 0; this.grounded = true; } else if (this.y + this.h > GROUND_Y) this.grounded = false;
+        
+        // JURUS FIX: Tabrakan Tanah Anti-Tembus 1000%
+        if (this.vy >= 0 && this.y + this.h >= GROUND_Y && !overPit) { 
+            if (!this.grounded) { spawnDust(this.x + this.w/2 - cameraX, GROUND_Y); this.squash = 10; } 
+            this.y = GROUND_Y - this.h; // Paksa kaki nempel tepat di atas tanah
+            this.vy = 0; 
+            this.grounded = true; 
+        } else if (this.y + this.h < GROUND_Y || overPit) {
+            this.grounded = false; // Jatuh normal kalau di luar tanah atau di atas jurang
+        }
+        
         if (this.y > H + 100 && currentState === STATE.PLAYING) { lives--; updateHUD(); if (lives <= 0) gameOver(); else stopGame(); }
         this.squash *= 0.8;
     }
     draw(ctx, camX) {
         let sx = Math.floor(this.x - camX); let sq = this.squash; let bSq = 0;
-        // Bayangan diperbesar menyesuaikan karakter
         ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(sx + this.w/2, GROUND_Y, this.w/2, 6, 0, 0, Math.PI*2); ctx.fill();
         let frame = ASSETS.playerIdle;
         if (currentState === STATE.RESPAWNING || currentState === STATE.GAME_OVER) frame = ASSETS.playerHit; else if (this.isDucking) frame = ASSETS.playerDuck; else if (!this.grounded) frame = ASSETS.playerJump; else if (Math.abs(this.vx) > 10) frame = (Math.floor(this.animTimer/0.15)%2 === 0) ? ASSETS.playerWalk1 : ASSETS.playerWalk2; else { bSq = Math.sin(this.idleTimer*4)*1.5; if (this.idleTimer > 2 && this.idleTimer % 3.5 < 0.15) frame = ASSETS.playerHit; }
         if (frame.complete) { let tSq = sq + bSq; if (this.isDucking) tSq = 0; let cH = this.h - tSq; let cW = this.w + (tSq*0.5); let aX = sx - (cW - this.w)/2; ctx.save(); if (!this.facingRight) { ctx.translate(aX + cW/2, 0); ctx.scale(-1, 1); ctx.drawImage(frame, -cW/2, Math.floor(this.y + tSq), cW, cH); } else ctx.drawImage(frame, aX, Math.floor(this.y + tSq), cW, cH); ctx.restore(); }
     }
-    getHitbox() { 
-        // Hitbox dipotong agar adil saat nunduk
-        if (this.isDucking) return { x: this.x + 8, y: this.y + 36, w: this.w - 16, h: this.h - 36 }; 
-        return { x: this.x + 8, y: this.y + 8, w: this.w - 16, h: this.h - 16 }; 
-    }
+    getHitbox() { if (this.isDucking) return { x: this.x + 8, y: this.y + 36, w: this.w - 16, h: this.h - 36 }; return { x: this.x + 8, y: this.y + 8, w: this.w - 16, h: this.h - 16 }; }
 }
 
 class Obstacle {
@@ -157,7 +134,6 @@ class ParallaxBg {
     draw(ctx, camX) {
         ctx.fillStyle = this.skyGrad; ctx.fillRect(0, 0, W, H); 
         let f = ASSETS.bgHillsFade, c = ASSETS.bgHillsColor; if (this.type === 'sawah') { f = ASSETS.bgTreesFade; c = ASSETS.bgTreesColor; } else if (this.type === 'temple') { f = ASSETS.bgDesertFade; c = ASSETS.bgDesertColor; } else if (this.type === 'menu') { f = ASSETS.bgMushroomsFade; c = ASSETS.bgMushroomsColor; }
-        
         let mesinWaktu = performance.now() / 1000;
         this.drawLayer(ctx, ASSETS.bgClouds, camX, 0.05, H, 0, mesinWaktu * 50); 
         this.drawLayer(ctx, f, camX, 0.3, H, 0); 
@@ -184,7 +160,12 @@ function drawDynamicGround(ctx, camX, type) {
     }
 }
 
-function resetGame(isDead = false) { if (!isDead) { let cfg = LEVELS[currentLevel]; player = new Player(cfg.maxSpeed); obstacles = []; checkpoints = []; particles = []; pits = []; bgLayers = new ParallaxBg(cfg.bg); cameraX = 0; nextSpawnX = 800; cpSpawnedThisLevel = 0; quizActiveIndex = -1; levelScore = 0; lives = 3; lastCheckpointX = 200; } }
+function resetGame(isDead = false) { 
+    if (!isDead) { 
+        let cfg = LEVELS[currentLevel]; player = new Player(cfg.maxSpeed); obstacles = []; checkpoints = []; particles = []; pits = []; bgLayers = new ParallaxBg(cfg.bg); 
+        cameraX = 0; nextSpawnX = 800; cpSpawnedThisLevel = 0; quizActiveIndex = -1; levelScore = 0; lives = 3; lastCheckpointX = 200; 
+    } 
+}
 function initGame(level) { currentLevel = level; resetGame(false); currentState = STATE.PLAYING; showOverlay(null); document.getElementById('hud').classList.add('active'); updateHUD(); lastTime = performance.now(); if (currentFrameId) cancelAnimationFrame(currentFrameId); currentFrameId = requestAnimationFrame(gameLoop); }
 function stopGame() { currentState = STATE.RESPAWNING; let f = document.getElementById('flash-overlay'); f.style.backgroundColor = 'rgba(0,0,0,0.7)'; f.style.opacity = '1'; setTimeout(respawn, 1000); }
 function respawn() { player.x = lastCheckpointX; player.y = GROUND_Y - player.h; player.vx = 0; player.vy = 0; cameraX = Math.max(0, player.x - 200); obstacles = obstacles.filter(o => Math.abs(o.x - player.x) > 400); document.getElementById('flash-overlay').style.opacity = '0'; updateHUD(); currentState = STATE.PLAYING; lastTime = performance.now(); }
@@ -217,10 +198,29 @@ function draw() {
 
 function checkCollision(r1, r2) { return r1.x < r2.x + r2.w && r1.x + r1.w > r2.x && r1.y < r2.y + r2.h && r1.y + r1.h > r2.y; }
 
+// JURUS FIX: Sistem Update Skor yang Akurat
 function triggerQuiz(idx) { currentState = STATE.PAUSED_QUIZ; quizActiveIndex = idx; let q = QUESTIONS[currentLevel][idx]; document.getElementById('quiz-question').innerText = q.q; let div = document.getElementById('quiz-options'); div.innerHTML = ''; q.opts.forEach((o, i) => { let b = document.createElement('button'); b.className = 'opt-btn'; b.innerText = o; b.onclick = () => checkAnswer(i, q.ans); div.appendChild(b); }); document.getElementById('quiz-feedback').style.display = 'none'; document.getElementById('quiz-next-btn').style.display = 'none'; showOverlay('quiz-modal'); }
-function checkAnswer(s, a) { let fb = document.getElementById('quiz-feedback'); fb.style.display = 'block'; if (s === a) { fb.style.color = '#27ae60'; fb.innerText = 'Jawaban Benar! +10 Poin ✨'; levelScore += 10; updateHUD(); } else { fb.style.color = '#e74c3c'; fb.innerText = 'Jawaban Kurang Tepat!'; } document.getElementById('quiz-next-btn').style.display = 'block'; }
+function checkAnswer(s, a) { let fb = document.getElementById('quiz-feedback'); fb.style.display = 'block'; if (s === a) { fb.style.color = '#27ae60'; fb.innerText = 'Jawaban Benar! +10 Poin ✨'; levelScore += 10; updateHUD(); } else { fb.style.color = '#e74c3c'; fb.innerText = 'Jawaban Kurang Tepat!'; } document.getElementById('quiz-next-btn').style.display = 'block'; document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true); }
+
 function resumeGame() { if (quizActiveIndex >= 2) finishLevel(); else { showOverlay(null); document.getElementById('hud').classList.add('active'); setTimeout(() => { lastTime = performance.now(); currentState = STATE.PLAYING; }, 400); } }
-function finishLevel() { totalScore += levelScore; if (currentLevel < 3) { unlockedLevels = Math.max(unlockedLevels, currentLevel + 1); localStorage.setItem('bq_unlocked', unlockedLevels); showOverlay('level-complete'); } else showOverlay('win-screen'); }
+
+function finishLevel() { 
+    totalScore += levelScore; 
+    document.getElementById('level-score').innerText = levelScore; 
+    
+    if (currentLevel < 3) { 
+        unlockedLevels = Math.max(unlockedLevels, currentLevel + 1); 
+        localStorage.setItem('bq_unlocked', unlockedLevels); 
+        localStorage.setItem('bq_score', totalScore); 
+        showOverlay('level-complete'); 
+    } else { 
+        document.getElementById('win-score').innerText = totalScore; 
+        localStorage.setItem('bq_unlocked', 1); // Reset untuk next playthrough
+        localStorage.setItem('bq_score', 0); 
+        showOverlay('win-screen'); 
+    } 
+}
+
 function nextLevel() { initGame(currentLevel + 1); } function retryLevel() { initGame(currentLevel); } function goMainMenu() { currentState = STATE.MENU; showOverlay('main-menu'); startMenuLoop(); }
 
 /* --- CONTROLS: KEYBOARD & MOBILE --- */
@@ -234,7 +234,7 @@ const btnJump = document.getElementById('btn-jump'); const btnDuck = document.ge
 
 function setupMobileBtn(btn, keyName) {
     if(!btn) return;
-    btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; if(keyName === 'jump') player.jump(); btn.classList.add('active'); }, { passive: false });
+    btn.addEventListener('touchstart', (e) => { e.preventDefault(); if (!keys[keyName]) { keys[keyName] = true; if(keyName === 'jump') player.jump(); } btn.classList.add('active'); }, { passive: false });
     btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; btn.classList.remove('active'); }, { passive: false });
     btn.addEventListener('mousedown', (e) => { keys[keyName] = true; if(keyName === 'jump') player.jump(); btn.classList.add('active'); });
     btn.addEventListener('mouseup', (e) => { keys[keyName] = false; btn.classList.remove('active'); });

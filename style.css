@@ -3,24 +3,30 @@ body {
     color: #fff; font-family: 'Press Start 2P', cursive;
     display: flex; justify-content: center; align-items: center;
     height: 100vh; width: 100vw; overflow: hidden;
-    touch-action: none; /* Mencegah layar scroll di HP */
+    touch-action: none;
 }
 
-/* Widescreen Game Container Responsive (Anti Gepeng) */
+/* Widescreen Game Container Responsive */
 #game-container {
-    position: relative; 
-    width: 100vw; 
-    height: 100vh;     
-    background-color: #11111b; 
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    position: relative; width: 100vw; height: 100vh;     
+    background-color: #11111b; display: flex; justify-content: center; align-items: center;
 }
 
-canvas { 
-    width: 100%; 
-    height: 100%; 
-    object-fit: contain; 
+canvas { width: 100%; height: 100%; object-fit: contain; }
+
+/* --- PERINGATAN PORTRAIT (KHUSUS HP BERDIRI) --- */
+#portrait-warning {
+    display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: linear-gradient(135deg, #11111b, #2c3e50);
+    z-index: 999999; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center; padding: 30px; box-sizing: border-box; font-family: 'Segoe UI', sans-serif;
+}
+#portrait-warning p { font-size: 18px; line-height: 1.6; font-weight: bold; }
+
+/* KODE SENSOR LAYAR HP */
+@media screen and (max-width: 900px) and (orientation: portrait) {
+    #game-container { display: none !important; }
+    #portrait-warning { display: flex !important; }
 }
 
 /* OVERLAYS (DIJAMIN TENGAH) */
@@ -35,20 +41,16 @@ canvas {
 
 h1, h2 { text-shadow: 3px 3px 0px #000; text-align: center; line-height: 1.5; margin: 0;}
 
-/* --- KOTAK PILIH LEVEL --- */
+/* KOTAK PILIH LEVEL */
 #levels-container {
     display: flex !important; flex-direction: row !important;
     justify-content: center !important; align-items: center !important;
     gap: 30px !important; width: 100%; margin: 0 auto; flex-wrap: wrap;
 }
-
 .card {
-    background: linear-gradient(135deg, #4aaeff, #318ce7);
-    border-radius: 20px; padding: 25px 15px; width: 180px; 
-    box-shadow: 0 10px 20px rgba(0,0,0,0.4); border: 4px solid #ffffff;
-    text-align: center; color: #ffffff; cursor: pointer;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    transition: transform 0.2s, box-shadow 0.2s ease;
+    background: linear-gradient(135deg, #4aaeff, #318ce7); border-radius: 20px; padding: 25px 15px; width: 180px; 
+    box-shadow: 0 10px 20px rgba(0,0,0,0.4); border: 4px solid #ffffff; text-align: center; color: #ffffff; cursor: pointer;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: transform 0.2s, box-shadow 0.2s ease;
 }
 .card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.6); }
 .card.locked { background: linear-gradient(135deg, #7f8c8d, #95a5a6); cursor: not-allowed; border-color: #bdc3c7; opacity: 0.8; }
@@ -56,7 +58,7 @@ h1, h2 { text-shadow: 3px 3px 0px #000; text-align: center; line-height: 1.5; ma
 .card h3 { font-size: 18px; font-weight: 900; margin-bottom: 15px; font-family: 'Press Start 2P', cursive; text-shadow: 2px 2px 0px rgba(0,0,0,0.5); }
 .card p { font-size: 14px; font-weight: 700; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); margin: 0; }
 
-/* --- TOMBOL --- */
+/* TOMBOL STANDAR */
 button {
     background-color: #e74c3c; color: #fff; border: 4px solid #c0392b; border-radius: 12px;
     padding: 15px 30px; font-family: 'Press Start 2P', cursive; font-size: 14px;
@@ -65,12 +67,11 @@ button {
 button:hover { background-color: #ff5e4d; transform: translateY(2px); box-shadow: 0 4px 0px #962d22; }
 button:active { transform: translateY(6px); box-shadow: none; }
 
-/* --- UI KUIS POP-UP --- */
+/* UI KUIS POP-UP */
 .quiz-box {
     background: linear-gradient(135deg, #ffffff, #f0f4f8); border-radius: 20px;
     padding: 30px; box-shadow: 0 25px 60px rgba(0,0,0,0.6), inset 0 0 0 4px #4aaeff;
-    text-align: center; width: 90%; max-width: 500px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center; width: 90%; max-width: 500px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 @keyframes popIn { 0% { transform: scale(0.7); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
@@ -81,8 +82,7 @@ button:active { transform: translateY(6px); box-shadow: none; }
 .opt-btn {
     background-color: #4aaeff; color: white; border: none; border-radius: 12px;
     padding: 14px 20px; width: 100%; font-size: 16px; font-weight: bold;
-    cursor: pointer; text-align: left; transition: all 0.2s ease;
-    box-shadow: 0 4px 6px rgba(74, 174, 255, 0.3); font-family: 'Segoe UI', sans-serif;
+    cursor: pointer; text-align: left; transition: all 0.2s ease; box-shadow: 0 4px 6px rgba(74, 174, 255, 0.3); font-family: 'Segoe UI', sans-serif;
 }
 .opt-btn:hover { background-color: #318ce7; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(74, 174, 255, 0.4); }
 .opt-btn:active { transform: translateY(1px); box-shadow: 0 2px 4px rgba(74, 174, 255, 0.3); }
@@ -100,32 +100,16 @@ button:active { transform: translateY(6px); box-shadow: none; }
 
 #flash-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255,0,0,0.4); z-index: 20; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
 
-/* =========================================================
-   MOBILE CONTROLS (VIRTUAL JOYPAD)
-   ========================================================= */
+/* MOBILE CONTROLS (VIRTUAL JOYPAD) */
 #mobile-controls {
     position: absolute; bottom: 30px; left: 0; width: 100%;
-    display: flex; justify-content: space-between; padding: 0 40px;
-    box-sizing: border-box; z-index: 100; pointer-events: none;
+    display: flex; justify-content: space-between; padding: 0 40px; box-sizing: border-box; z-index: 100; pointer-events: none;
 }
-
 .d-pad, .action-pad { display: flex; gap: 20px; pointer-events: auto; }
-
 .control-btn {
-    background: rgba(255, 255, 255, 0.15); border: 2px solid rgba(255, 255, 255, 0.5);
-    color: white; font-size: 24px; width: 65px; height: 65px; border-radius: 50%;
-    display: flex; justify-content: center; align-items: center;
-    backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
-    user-select: none; -webkit-user-select: none; touch-action: none;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: background 0.1s, transform 0.1s;
-    cursor: pointer; font-family: sans-serif;
+    background: rgba(255, 255, 255, 0.15); border: 2px solid rgba(255, 255, 255, 0.5); color: white; font-size: 24px; width: 65px; height: 65px; border-radius: 50%;
+    display: flex; justify-content: center; align-items: center; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+    user-select: none; -webkit-user-select: none; touch-action: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: background 0.1s, transform 0.1s; cursor: pointer; font-family: sans-serif;
 }
-
-.control-btn:active, .control-btn.active {
-    background: rgba(255, 255, 255, 0.5); transform: scale(0.85);
-}
-
-/* Sembunyikan tombol virtual jika dimainkan di PC */
-@media (min-width: 1025px) {
-    #mobile-controls { display: none; }
-}
+.control-btn:active, .control-btn.active { background: rgba(255, 255, 255, 0.5); transform: scale(0.85); }
+@media (min-width: 1025px) { #mobile-controls { display: none; } }
