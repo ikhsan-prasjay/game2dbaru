@@ -1,6 +1,6 @@
 /** * BRAIN QUEST - PROFESSIONAL 2D ENGINE
  * FULLSCREEN RESPONSIVE | Alive Clouds | Safe Landing Fix | Score Fix
- * UPDATE: Mobile Control Friction & Speed Tuning (Anti-Licin)
+ * UPDATE: Pit (Jurang) Width Scaled Down for Slower Movement
  */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -41,7 +41,6 @@ const QUESTIONS = {
     3: [ { q: "Indonesia memproklamasikan kemerdekaan pada tanggal…", opts: ["1 Juni 1945", "17 Agustus 1945", "20 Mei 1908", "28 Oktober 1928"], ans: 1 }, { q: "Siapakah proklamator kemerdekaan Indonesia?", opts: ["Soeharto & Habibie", "Cut Nyak Dien & Kartini", "Soekarno & Hatta", "Gajah Mada & Hayam Wuruk"], ans: 2 }, { q: "Pancasila sebagai dasar negara dirumuskan oleh…", opts: ["Moh. Yamin", "Soepomo", "Soekarno", "Hatta"], ans: 2 } ]
 };
 
-// JURUS FIX: Kecepatan Level Diperlambat agar aman di HP
 const LEVELS = { 
     1: { name: "Mengenal Lingkungan", bg: "village", maxSpeed: 300, spawnGap: 800, innerGap: 350, patterns: [ [0], [3], [0, 0], [3, 0] ] },
     2: { name: "Sosial & Budaya", bg: "sawah", maxSpeed: 350, spawnGap: 550, innerGap: 300, patterns: [ [0, 1], [3, 1], [4, 0], [1, 0], [3, 3] ] },
@@ -64,15 +63,12 @@ class Player {
     constructor(cfgSpeed) { 
         this.w = 56; this.h = 68; this.x = 200; this.y = GROUND_Y - this.h; 
         this.vy = 0; this.vx = 0; 
-        
-        // FISIKA KONTROL YANG DISESUAIKAN UNTUK HP
         this.maxSpeed = cfgSpeed; 
-        this.accel = 2000; // Dikurangi dari 3500: Tarikan lari lebih kalem, tidak sentak
-        this.friction = 0.80; // Dikurangi dari 0.85: Rem super pakem agar tidak licin/bablas
+        this.accel = 2000; 
+        this.friction = 0.80; 
         this.grav = 1600; 
         this.fallGravMulti = 1.8; 
-        this.jumpForce = -750; // Lompatan sedikit lebih berat dan terkontrol
-        
+        this.jumpForce = -750; 
         this.grounded = true; this.squash = 0; this.animTimer = 0; this.facingRight = true; this.idleTimer = 0; this.isDucking = false; 
     }
     jump() { if (this.grounded && !this.isDucking) { this.vy = this.jumpForce; this.grounded = false; this.squash = -8; sfx.jump(); spawnDust(this.x + this.w/2 - cameraX, this.y + this.h); } }
@@ -80,7 +76,7 @@ class Player {
         this.isDucking = (keys.down && this.grounded);
         if (keys.left) this.vx -= this.accel * dt; if (keys.right) this.vx += this.accel * dt;
         
-        this.vx *= this.friction; // Rem otomatis bekerja di sini
+        this.vx *= this.friction; 
         if (this.isDucking) this.vx *= 0.5; 
         
         if (this.vx > this.maxSpeed) this.vx = this.maxSpeed; if (this.vx < -this.maxSpeed) this.vx = -this.maxSpeed;
@@ -95,7 +91,6 @@ class Player {
         
         let overPit = false; let px = this.x + this.w/2; for (let p of pits) if (px > p.x && px < p.x + p.w) overPit = true;
         
-        // FISIKA TABRAKAN TANAH MUTLAK (Anti Tembus di Mobile!)
         if (this.vy >= 0 && this.y + this.h >= GROUND_Y && !overPit) { 
             if (!this.grounded) { spawnDust(this.x + this.w/2 - cameraX, GROUND_Y); this.squash = 10; } 
             this.y = GROUND_Y - this.h; 
@@ -202,7 +197,21 @@ function update(dt) {
     let cfg = LEVELS[currentLevel]; player.update(dt);
     if (player.x + 1500 > nextSpawnX && cpSpawnedThisLevel < 3) {
         if (Math.floor(nextSpawnX / 3000) > cpSpawnedThisLevel) { checkpoints.push(new Checkpoint(nextSpawnX, cpSpawnedThisLevel)); cpSpawnedThisLevel++; nextSpawnX += 800; }
-        else { let p = cfg.patterns[Math.floor(Math.random() * cfg.patterns.length)]; let cur = nextSpawnX; p.forEach(t => { if (t >= 3) { let pw = (t===3)?150:(t===4)?250:350; pits.push({x:cur, w:pw}); cur += pw + 250; } else { obstacles.push(new Obstacle(cur, t)); cur += cfg.innerGap; } }); nextSpawnX = cur + cfg.spawnGap; }
+        else { 
+            let p = cfg.patterns[Math.floor(Math.random() * cfg.patterns.length)]; let cur = nextSpawnX; 
+            p.forEach(t => { 
+                if (t >= 3) { 
+                    // FIX: UKURAN JURANG (PITS) DIPERSEMPIT menyesuaikan kecepatan lari yang melambat
+                    // Agar karakter tetap bisa melompat sampai seberang dengan aman.
+                    let pw = (t===3) ? 120 : (t===4) ? 180 : 240; 
+                    pits.push({x:cur, w:pw}); 
+                    cur += pw + 180; // Jarak pijakan aman setelah jurang
+                } else { 
+                    obstacles.push(new Obstacle(cur, t)); cur += cfg.innerGap; 
+                } 
+            }); 
+            nextSpawnX = cur + cfg.spawnGap; 
+        }
     }
     obstacles.forEach(o => { o.update(dt); if (checkCollision(player.getHitbox(), o.getHitbox()) && !o.marked) { o.marked = true; lives--; sfx.hit(); if (lives <= 0) gameOver(); else stopGame(); } });
     checkpoints.forEach(c => { c.update(dt); if (checkCollision(player.getHitbox(), c.getHitbox()) && !c.triggered) { c.triggered = true; sfx.coin(); lastCheckpointX = c.x; triggerQuiz(c.qIndex); } });
