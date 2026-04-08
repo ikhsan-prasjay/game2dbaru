@@ -1,5 +1,5 @@
 /** * BRAIN QUEST - PROFESSIONAL 2D ENGINE
- * FULLSCREEN RESPONSIVE | Alive Clouds | Pit Glitch Fixed | Speed Tuned
+ * FULLSCREEN RESPONSIVE | 5 LEVELS | PERFECT COLLISION | SCORE FIX
  */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -29,7 +29,18 @@ const THEMES = ['grass', 'dirt', 'sand', 'purple', 'snow']; const TILE_TYPES = [
 THEMES.forEach(theme => { ASSETS.tiles[theme] = {}; TILE_TYPES.forEach(type => { let img = new Image(); img.src = `assets/terrain_${theme}_block_${type}.svg`; ASSETS.tiles[theme][type] = img; }); });
 
 const STATE = { MENU: 0, LEVEL_SELECT: 1, PLAYING: 2, PAUSED_QUIZ: 3, GAME_OVER: 4, LEVEL_COMPLETE: 5, WIN: 6, RESPAWNING: 7 };
-let currentState = STATE.MENU; let currentLevel = 1; let unlockedLevels = 5; let totalScore = parseInt(localStorage.getItem('bq_score')) || 0; let levelScore = 0; let lives = 3; let lastTime = 0; let currentFrameId = null;
+let currentState = STATE.MENU; 
+let currentLevel = 1; 
+
+// FIX BUG SKOR: Membersihkan data kotor dari LocalStorage agar tidak jadi NaN
+let savedLevel = parseInt(localStorage.getItem('bq_unlocked'));
+let unlockedLevels = isNaN(savedLevel) ? 1 : savedLevel; 
+
+let savedScore = parseInt(localStorage.getItem('bq_score'));
+let totalScore = isNaN(savedScore) ? 0 : savedScore; // Jika rusak, mulai dari 0
+let levelScore = 0; 
+let lives = 3; let lastTime = 0; let currentFrameId = null;
+
 let cameraX = 0; let nextSpawnX = 800; let cpSpawnedThisLevel = 0; let shakeTime = 0; let lastCheckpointX = 200; 
 let player; let obstacles = []; let checkpoints = []; let particles = []; let pits = []; let bgLayers = null;
 
@@ -41,7 +52,6 @@ const QUESTIONS = {
     5: [ { q: "Bapak Pendidikan Nasional Indonesia adalah...", opts: ["Ki Hajar Dewantara", "Ir. Soekarno", "Moh. Hatta", "Jenderal Sudirman"], ans: 0 }, { q: "Pahlawan emansipasi wanita dari Jepara adalah...", opts: ["Cut Nyak Dien", "R.A. Kartini", "Dewi Sartika", "Martha Christina Tiahahu"], ans: 1 }, { q: "Jenderal besar yang memimpin perang gerilya adalah...", opts: ["Jenderal Sudirman", "Jenderal Nasution", "Pangeran Diponegoro", "Tuanku Imam Bonjol"], ans: 0 } ]
 };
 
-// KECEPATAN (MAX SPEED) DINAINKAN SEDIKIT (+50)
 const LEVELS = { 
     1: { name: "Lingkungan", bg: "village", terrain: "grass", maxSpeed: 350, spawnGap: 800, innerGap: 350, patterns: [ ['spike'], ['P1'], ['slime', 'spike'], ['P1', 'slime'] ] },
     2: { name: "Sosial Budaya", bg: "sawah", terrain: "dirt", maxSpeed: 400, spawnGap: 600, innerGap: 300, patterns: [ ['snail', 'bee'], ['P1', 'snail'], ['spike', 'bee'], ['P2', 'spike'] ] },
@@ -50,24 +60,49 @@ const LEVELS = {
     5: { name: "Kemerdekaan", bg: "village", terrain: "snow", maxSpeed: 550, spawnGap: 400, innerGap: 250, patterns: [ ['bomb', 'saw_h'], ['P3', 'saw_v'], ['bomb', 'P2', 'bomb'], ['saw_h', 'saw_v'] ] }
 };
 
-function toggleFullScreen() { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(err => { console.log(err); }); } else { if (document.exitFullscreen) document.exitFullscreen(); } }
-function showOverlay(id) { document.querySelectorAll('.overlay').forEach(el => el.classList.remove('active')); if (id) { document.getElementById(id).classList.add('active'); document.getElementById('hud').classList.remove('active'); } }
-function updateHUD() { document.getElementById('lives').innerText = '❤️'.repeat(lives); document.getElementById('score').innerText = totalScore + levelScore; document.getElementById('level-name').innerText = 'LEVEL ' + currentLevel; }
-function showLevelSelect() { currentState = STATE.LEVEL_SELECT; showOverlay('level-select'); const container = document.getElementById('levels-container'); container.innerHTML = ''; for (let i = 1; i <= 5; i++) { let isLocked = i > unlockedLevels; let c = document.createElement('div'); c.className = `card ${isLocked ? 'locked' : ''}`; c.innerHTML = `<h3>Level ${i}</h3><p style="color:#FFF;">${LEVELS[i].name}</p><div style="font-size:24px;margin-top:10px;">${isLocked ? '🔒' : '⭐'}</div>`; if (!isLocked) c.onclick = () => initGame(i); container.appendChild(c); } }
+/* --- AUDIO ENGINE --- */
+const AUDIO = {
+    bgm: new Audio('assets/PSHT SEDATI - MEKARLAH BUNGA TERATE  OFFICIAL MUSIC VIDEO(NEW VERSION).mp3'),
+    jump: new Audio('assets/sfx_jump.ogg'), hit: new Audio('assets/sfx_hurt.ogg'), coin: new Audio('assets/sfx_coin.ogg'),
+    over: new Audio('assets/sfx_disappear.ogg'), select: new Audio('assets/sfx_select.ogg'), win: new Audio('assets/sfx_magic.ogg')
+};
 
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-const sfx = { play(freq, type, dur, vol = 0.1) { try { if (audioCtx.state === 'suspended') audioCtx.resume(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime); gain.gain.setValueAtTime(vol, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + dur); } catch(e) { } }, jump() { this.play(400, 'square', 0.15, 0.05); }, hit() { this.play(150, 'sawtooth', 0.3, 0.1); }, coin() { this.play(800, 'sine', 0.1, 0.05); }, over() { this.play(200, 'square', 0.5, 0.1); } };
+AUDIO.bgm.loop = true; AUDIO.bgm.volume = 0.35; AUDIO.jump.volume = 0.4; AUDIO.hit.volume = 0.5; AUDIO.coin.volume = 0.5; AUDIO.over.volume = 0.6; AUDIO.select.volume = 0.5; AUDIO.win.volume = 0.6;
+
+let bgmStarted = false;
+function startBGM() { if (!bgmStarted) { AUDIO.bgm.play().catch(e => console.log("Menunggu interaksi.")); bgmStarted = true; } }
+function playSound(snd) { if (snd) { snd.currentTime = 0; snd.play().catch(e => {}); } }
+
+const sfx = { jump: () => playSound(AUDIO.jump), hit: () => playSound(AUDIO.hit), coin: () => playSound(AUDIO.coin), over: () => playSound(AUDIO.over), select: () => playSound(AUDIO.select), win: () => playSound(AUDIO.win) };
+
+function toggleFullScreen() { sfx.select(); startBGM(); if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(err => { console.log(err); }); } else { if (document.exitFullscreen) document.exitFullscreen(); } }
+function showOverlay(id) { document.querySelectorAll('.overlay').forEach(el => el.classList.remove('active')); if (id) { document.getElementById(id).classList.add('active'); document.getElementById('hud').classList.remove('active'); } }
+
+// MEMASTIKAN HUD MENGHILANGKAN NAN SEKALIPUN ADA ERROR
+function updateHUD() { 
+    if(isNaN(totalScore)) totalScore = 0; 
+    if(isNaN(levelScore)) levelScore = 0;
+    document.getElementById('lives').innerText = '❤️'.repeat(lives); 
+    document.getElementById('score').innerText = totalScore + levelScore; 
+    document.getElementById('level-name').innerText = 'LEVEL ' + currentLevel; 
+}
+
+function showLevelSelect() { 
+    sfx.select(); startBGM(); 
+    currentState = STATE.LEVEL_SELECT; showOverlay('level-select'); 
+    const container = document.getElementById('levels-container'); container.innerHTML = ''; 
+    for (let i = 1; i <= 5; i++) { 
+        let isLocked = i > unlockedLevels; let c = document.createElement('div'); c.className = `card ${isLocked ? 'locked' : ''}`; 
+        c.innerHTML = `<h3>Level ${i}</h3><p style="color:#FFF;">${LEVELS[i].name}</p><div style="font-size:24px;margin-top:10px;">${isLocked ? '🔒' : '⭐'}</div>`; 
+        if (!isLocked) c.onclick = () => { sfx.select(); initGame(i); }; container.appendChild(c); 
+    } 
+}
 
 class Player {
     constructor(cfgSpeed) { 
         this.w = 56; this.h = 68; this.x = 200; this.y = GROUND_Y - this.h; 
-        this.vy = 0; this.vx = 0; 
-        
-        this.maxSpeed = cfgSpeed; 
-        this.accel = 7000; // Tarikan gas dinaikkan sedikit agar gerak lebih gesit
-        this.friction = 0.80; 
+        this.vy = 0; this.vx = 0; this.maxSpeed = cfgSpeed; this.accel = 5500; this.friction = 0.80; 
         this.grav = 1600; this.fallGravMulti = 1.8; this.jumpForce = -750; 
-        
         this.grounded = true; this.squash = 0; this.animTimer = 0; this.facingRight = true; this.idleTimer = 0; this.isDucking = false; 
     }
     jump() { if (this.grounded && !this.isDucking) { this.vy = this.jumpForce; this.grounded = false; this.squash = -8; sfx.jump(); spawnDust(this.x + this.w/2 - cameraX, this.y + this.h); } }
@@ -75,18 +110,10 @@ class Player {
     update(dt) {
         this.isDucking = (keys.down && this.grounded);
         
-        // BUG JURANG FIXED: Jika karakter jatuh ke dalam jurang (melewati garis tanah)
-        // Matikan kontrol kiri/kanan agar tidak nyangkut ke pinggir jurang!
-        if (this.y + this.h > GROUND_Y + 10) {
-            this.vx = 0; 
-        } else {
-            if (keys.left) this.vx -= this.accel * dt; 
-            if (keys.right) this.vx += this.accel * dt;
-        }
-
-        this.vx *= this.friction; 
-        if (this.isDucking) this.vx *= 0.5; 
+        // Anti nyangkut di dinding jurang
+        if (this.y + this.h > GROUND_Y + 10) { this.vx = 0; } else { if (keys.left) this.vx -= this.accel * dt; if (keys.right) this.vx += this.accel * dt; }
         
+        this.vx *= this.friction; if (this.isDucking) this.vx *= 0.5; 
         if (this.vx > this.maxSpeed) this.vx = this.maxSpeed; if (this.vx < -this.maxSpeed) this.vx = -this.maxSpeed;
         if (this.vx > 5) this.facingRight = true; if (this.vx < -5) this.facingRight = false;
         
@@ -94,25 +121,19 @@ class Player {
         this.x += this.vx * dt; if (this.x < cameraX) { this.x = cameraX; this.vx = 0; }
         
         let targetX = this.x - W * 0.35; if (targetX > cameraX) cameraX += (targetX - cameraX) * 12 * dt;
-        
         let curGrav = this.grav; if (this.vy > 0) curGrav *= this.fallGravMulti; else if (!keys.jump && this.vy < 0) curGrav *= 2.5;
         this.vy += curGrav * dt; this.y += this.vy * dt;
         
-        // LOGIKA DETEKSI JURANG
         let overPit = false; let px = this.x + this.w/2; 
-        for (let p of pits) {
-            // Toleransi sedikit di pinggir jurang
-            if (px > p.x + 10 && px < p.x + p.w - 10) overPit = true; 
-        }
+        for (let p of pits) { if (px > p.x + 10 && px < p.x + p.w - 10) overPit = true;  }
         
-        // SISTEM TANAH SAKTI (Anti-Teleport dari dalam jurang)
-        // Hanya bisa menapak jika kaki tidak masuk lebih dari 30px ke dalam tanah!
-        if (this.vy >= 0 && this.y + this.h >= GROUND_Y && this.y + this.h <= GROUND_Y + 30 && !overPit) { 
+        // FIX BUG JATUH TEMBUS TANAH DI HP (Menghapus Batas Bawah)
+        if (this.vy >= 0 && this.y + this.h >= GROUND_Y && !overPit) { 
             if (!this.grounded) { spawnDust(this.x + this.w/2 - cameraX, GROUND_Y); this.squash = 10; } 
             this.y = GROUND_Y - this.h; 
             this.vy = 0; 
             this.grounded = true; 
-        } else {
+        } else { 
             this.grounded = false; 
         }
         
@@ -225,10 +246,18 @@ function resetGame(isDead = false) {
         cameraX = 0; nextSpawnX = 800; cpSpawnedThisLevel = 0; quizActiveIndex = -1; levelScore = 0; lives = 3; lastCheckpointX = 200; 
     } 
 }
-function initGame(level) { currentLevel = level; resetGame(false); currentState = STATE.PLAYING; showOverlay(null); document.getElementById('hud').classList.add('active'); updateHUD(); lastTime = performance.now(); if (currentFrameId) cancelAnimationFrame(currentFrameId); currentFrameId = requestAnimationFrame(gameLoop); }
+function initGame(level) { sfx.select(); currentLevel = level; resetGame(false); currentState = STATE.PLAYING; showOverlay(null); document.getElementById('hud').classList.add('active'); updateHUD(); lastTime = performance.now(); if (currentFrameId) cancelAnimationFrame(currentFrameId); currentFrameId = requestAnimationFrame(gameLoop); }
 function stopGame() { currentState = STATE.RESPAWNING; let f = document.getElementById('flash-overlay'); f.style.backgroundColor = 'rgba(0,0,0,0.7)'; f.style.opacity = '1'; setTimeout(respawn, 1000); }
 function respawn() { player.x = lastCheckpointX; player.y = GROUND_Y - player.h; player.vx = 0; player.vy = 0; cameraX = Math.max(0, player.x - 200); obstacles = obstacles.filter(o => Math.abs(o.x - player.x) > 400); document.getElementById('flash-overlay').style.opacity = '0'; updateHUD(); currentState = STATE.PLAYING; lastTime = performance.now(); }
-function gameOver() { currentState = STATE.GAME_OVER; sfx.over(); document.getElementById('final-score').innerText = totalScore + levelScore; unlockedLevels = 1; localStorage.setItem('bq_unlocked', 1); showOverlay('game-over'); }
+
+// FUNGSI GAME OVER: Membersihkan NaN
+function gameOver() { 
+    currentState = STATE.GAME_OVER; sfx.over(); 
+    if(isNaN(totalScore)) totalScore = 0; if(isNaN(levelScore)) levelScore = 0;
+    document.getElementById('final-score').innerText = totalScore + levelScore; 
+    localStorage.setItem('bq_unlocked', 1); localStorage.setItem('bq_score', 0); // Reset memori
+    showOverlay('game-over'); 
+}
 
 function gameLoop(timestamp) {
     let dt = (timestamp - lastTime) / 1000; if (dt > 0.1) dt = 0.1; lastTime = timestamp;
@@ -262,33 +291,55 @@ function update(dt) {
 
 function draw() {
     ctx.clearRect(0, 0, W, H); let snapCamX = Math.floor(cameraX);
-    bgLayers.draw(ctx, snapCamX); drawDynamicGround(ctx, snapCamX, (currentState===STATE.MENU)?'grass':LEVELS[currentLevel].terrain);
+    bgLayers.draw(ctx, snapCamX); 
+    drawDynamicGround(ctx, snapCamX, (currentState===STATE.MENU)?'grass':LEVELS[currentLevel].terrain);
     checkpoints.forEach(c => c.draw(ctx, snapCamX)); obstacles.forEach(o => o.draw(ctx, snapCamX)); player.draw(ctx, snapCamX); particles.forEach(p => p.draw(ctx));
 }
 
 function checkCollision(r1, r2) { return r1.x < r2.x + r2.w && r1.x + r1.w > r2.x && r1.y < r2.y + r2.h && r1.y + r1.h > r2.y; }
 
-function triggerQuiz(idx) { currentState = STATE.PAUSED_QUIZ; quizActiveIndex = idx; let q = QUESTIONS[currentLevel][idx]; document.getElementById('quiz-question').innerText = q.q; let div = document.getElementById('quiz-options'); div.innerHTML = ''; q.opts.forEach((o, i) => { let b = document.createElement('button'); b.className = 'opt-btn'; b.innerText = o; b.onclick = () => checkAnswer(i, q.ans); div.appendChild(b); }); document.getElementById('quiz-feedback').style.display = 'none'; document.getElementById('quiz-next-btn').style.display = 'none'; showOverlay('quiz-modal'); }
+function triggerQuiz(idx) { sfx.select(); currentState = STATE.PAUSED_QUIZ; quizActiveIndex = idx; let q = QUESTIONS[currentLevel][idx]; document.getElementById('quiz-question').innerText = q.q; let div = document.getElementById('quiz-options'); div.innerHTML = ''; q.opts.forEach((o, i) => { let b = document.createElement('button'); b.className = 'opt-btn'; b.innerText = o; b.onclick = () => checkAnswer(i, q.ans); div.appendChild(b); }); document.getElementById('quiz-feedback').style.display = 'none'; document.getElementById('quiz-next-btn').style.display = 'none'; showOverlay('quiz-modal'); }
 
 function checkAnswer(s, a) { 
     let fb = document.getElementById('quiz-feedback'); fb.style.display = 'block'; 
-    if (s === a) { fb.style.color = '#27ae60'; fb.innerText = 'Jawaban Benar! +10 Poin ✨'; levelScore += 10; updateHUD(); } 
-    else { fb.style.color = '#e74c3c'; fb.innerText = 'Jawaban Kurang Tepat!'; } 
-    document.getElementById('quiz-next-btn').style.display = 'block'; document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true); 
+    if (s === a) { 
+        sfx.coin(); 
+        fb.style.color = '#27ae60'; fb.innerText = 'Jawaban Benar! +10 Poin ✨'; 
+        levelScore += 10; updateHUD(); 
+    } else { 
+        sfx.hit(); 
+        fb.style.color = '#e74c3c'; fb.innerText = 'Jawaban Kurang Tepat!'; 
+    } 
+    document.getElementById('quiz-next-btn').style.display = 'block'; 
+    document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true); 
 }
 
-function resumeGame() { if (quizActiveIndex >= 2) finishLevel(); else { showOverlay(null); document.getElementById('hud').classList.add('active'); setTimeout(() => { lastTime = performance.now(); currentState = STATE.PLAYING; }, 400); } }
+function resumeGame() { sfx.select(); if (quizActiveIndex >= 2) finishLevel(); else { showOverlay(null); document.getElementById('hud').classList.add('active'); setTimeout(() => { lastTime = performance.now(); currentState = STATE.PLAYING; }, 400); } }
 
+// FIX BUG SKOR: Memaksa nilai score agar tidak error saat ganti level
 function finishLevel() { 
-    totalScore += levelScore; document.getElementById('level-score').innerText = levelScore; 
+    if(isNaN(totalScore)) totalScore = 0; if(isNaN(levelScore)) levelScore = 0;
+    totalScore += levelScore; 
+    document.getElementById('level-score').innerText = levelScore; 
+    
     if (currentLevel < 5) { 
-        unlockedLevels = Math.max(unlockedLevels, currentLevel + 1); localStorage.setItem('bq_unlocked', unlockedLevels); localStorage.setItem('bq_score', totalScore); showOverlay('level-complete'); 
+        sfx.win();
+        unlockedLevels = Math.max(unlockedLevels, currentLevel + 1); 
+        localStorage.setItem('bq_unlocked', unlockedLevels); 
+        localStorage.setItem('bq_score', totalScore); 
+        showOverlay('level-complete'); 
     } else { 
-        document.getElementById('win-score').innerText = totalScore; localStorage.setItem('bq_unlocked', 1); localStorage.setItem('bq_score', 0); showOverlay('win-screen'); 
+        sfx.win();
+        document.getElementById('win-score').innerText = totalScore; 
+        localStorage.setItem('bq_unlocked', 5); 
+        localStorage.setItem('bq_score', 0); 
+        showOverlay('win-screen'); 
     } 
 }
 
-function nextLevel() { initGame(currentLevel + 1); } function retryLevel() { initGame(currentLevel); } function goMainMenu() { currentState = STATE.MENU; showOverlay('main-menu'); startMenuLoop(); }
+function nextLevel() { sfx.select(); initGame(currentLevel + 1); } 
+function retryLevel() { sfx.select(); initGame(currentLevel); } 
+function goMainMenu() { sfx.select(); currentState = STATE.MENU; showOverlay('main-menu'); startMenuLoop(); }
 
 /* --- CONTROLS: KEYBOARD & MOBILE --- */
 const keys = { left: false, right: false, jump: false, down: false };
