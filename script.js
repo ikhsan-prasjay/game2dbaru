@@ -1,5 +1,6 @@
 /** * BRAIN QUEST - PROFESSIONAL 2D ENGINE
  * FULLSCREEN RESPONSIVE | Alive Clouds | Safe Landing Fix | Score Fix
+ * UPDATE: Mobile Control Friction & Speed Tuning (Anti-Licin)
  */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -40,10 +41,11 @@ const QUESTIONS = {
     3: [ { q: "Indonesia memproklamasikan kemerdekaan pada tanggal…", opts: ["1 Juni 1945", "17 Agustus 1945", "20 Mei 1908", "28 Oktober 1928"], ans: 1 }, { q: "Siapakah proklamator kemerdekaan Indonesia?", opts: ["Soeharto & Habibie", "Cut Nyak Dien & Kartini", "Soekarno & Hatta", "Gajah Mada & Hayam Wuruk"], ans: 2 }, { q: "Pancasila sebagai dasar negara dirumuskan oleh…", opts: ["Moh. Yamin", "Soepomo", "Soekarno", "Hatta"], ans: 2 } ]
 };
 
+// JURUS FIX: Kecepatan Level Diperlambat agar aman di HP
 const LEVELS = { 
-    1: { name: "Mengenal Lingkungan", bg: "village", maxSpeed: 450, spawnGap: 800, innerGap: 350, patterns: [ [0], [3], [0, 0], [3, 0] ] },
-    2: { name: "Sosial & Budaya", bg: "sawah", maxSpeed: 500, spawnGap: 550, innerGap: 300, patterns: [ [0, 1], [3, 1], [4, 0], [1, 0], [3, 3] ] },
-    3: { name: "Sejarah", bg: "temple", maxSpeed: 550, spawnGap: 400, innerGap: 280, patterns: [ [0, 2], [4, 2], [5], [3, 0, 1], [0, 1, 0, 3], [5, 0] ] }
+    1: { name: "Mengenal Lingkungan", bg: "village", maxSpeed: 300, spawnGap: 800, innerGap: 350, patterns: [ [0], [3], [0, 0], [3, 0] ] },
+    2: { name: "Sosial & Budaya", bg: "sawah", maxSpeed: 350, spawnGap: 550, innerGap: 300, patterns: [ [0, 1], [3, 1], [4, 0], [1, 0], [3, 3] ] },
+    3: { name: "Sejarah", bg: "temple", maxSpeed: 400, spawnGap: 400, innerGap: 280, patterns: [ [0, 2], [4, 2], [5], [3, 0, 1], [0, 1, 0, 3], [5, 0] ] }
 };
 
 function toggleFullScreen() {
@@ -59,16 +61,33 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const sfx = { play(freq, type, dur, vol = 0.1) { try { if (audioCtx.state === 'suspended') audioCtx.resume(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime); gain.gain.setValueAtTime(vol, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + dur); } catch(e) { } }, jump() { this.play(400, 'square', 0.15, 0.05); }, hit() { this.play(150, 'sawtooth', 0.3, 0.1); }, coin() { this.play(800, 'sine', 0.1, 0.05); }, over() { this.play(200, 'square', 0.5, 0.1); } };
 
 class Player {
-    constructor(cfgSpeed) { this.w = 56; this.h = 68; this.x = 200; this.y = GROUND_Y - this.h; this.vy = 0; this.vx = 0; this.maxSpeed = cfgSpeed; this.accel = 3500; this.friction = 0.85; this.grav = 1600; this.fallGravMulti = 1.8; this.jumpForce = -800; this.grounded = true; this.squash = 0; this.animTimer = 0; this.facingRight = true; this.idleTimer = 0; this.isDucking = false; }
+    constructor(cfgSpeed) { 
+        this.w = 56; this.h = 68; this.x = 200; this.y = GROUND_Y - this.h; 
+        this.vy = 0; this.vx = 0; 
+        
+        // FISIKA KONTROL YANG DISESUAIKAN UNTUK HP
+        this.maxSpeed = cfgSpeed; 
+        this.accel = 2000; // Dikurangi dari 3500: Tarikan lari lebih kalem, tidak sentak
+        this.friction = 0.80; // Dikurangi dari 0.85: Rem super pakem agar tidak licin/bablas
+        this.grav = 1600; 
+        this.fallGravMulti = 1.8; 
+        this.jumpForce = -750; // Lompatan sedikit lebih berat dan terkontrol
+        
+        this.grounded = true; this.squash = 0; this.animTimer = 0; this.facingRight = true; this.idleTimer = 0; this.isDucking = false; 
+    }
     jump() { if (this.grounded && !this.isDucking) { this.vy = this.jumpForce; this.grounded = false; this.squash = -8; sfx.jump(); spawnDust(this.x + this.w/2 - cameraX, this.y + this.h); } }
     update(dt) {
         this.isDucking = (keys.down && this.grounded);
         if (keys.left) this.vx -= this.accel * dt; if (keys.right) this.vx += this.accel * dt;
-        this.vx *= this.friction; if (this.isDucking) this.vx *= 0.5; 
+        
+        this.vx *= this.friction; // Rem otomatis bekerja di sini
+        if (this.isDucking) this.vx *= 0.5; 
+        
         if (this.vx > this.maxSpeed) this.vx = this.maxSpeed; if (this.vx < -this.maxSpeed) this.vx = -this.maxSpeed;
         if (this.vx > 5) this.facingRight = true; if (this.vx < -5) this.facingRight = false;
         this.animTimer += dt; if (this.grounded && Math.abs(this.vx) < 5 && !this.isDucking) this.idleTimer += dt; else this.idleTimer = 0;
         this.x += this.vx * dt; if (this.x < cameraX) { this.x = cameraX; this.vx = 0; }
+        
         let targetX = this.x - W * 0.35; if (targetX > cameraX) cameraX += (targetX - cameraX) * 12 * dt;
         
         let curGrav = this.grav; if (this.vy > 0) curGrav *= this.fallGravMulti; else if (!keys.jump && this.vy < 0) curGrav *= 2.5;
@@ -76,14 +95,14 @@ class Player {
         
         let overPit = false; let px = this.x + this.w/2; for (let p of pits) if (px > p.x && px < p.x + p.w) overPit = true;
         
-        // JURUS FIX: Tabrakan Tanah Anti-Tembus 1000%
+        // FISIKA TABRAKAN TANAH MUTLAK (Anti Tembus di Mobile!)
         if (this.vy >= 0 && this.y + this.h >= GROUND_Y && !overPit) { 
             if (!this.grounded) { spawnDust(this.x + this.w/2 - cameraX, GROUND_Y); this.squash = 10; } 
-            this.y = GROUND_Y - this.h; // Paksa kaki nempel tepat di atas tanah
+            this.y = GROUND_Y - this.h; 
             this.vy = 0; 
             this.grounded = true; 
         } else if (this.y + this.h < GROUND_Y || overPit) {
-            this.grounded = false; // Jatuh normal kalau di luar tanah atau di atas jurang
+            this.grounded = false; 
         }
         
         if (this.y > H + 100 && currentState === STATE.PLAYING) { lives--; updateHUD(); if (lives <= 0) gameOver(); else stopGame(); }
@@ -198,9 +217,19 @@ function draw() {
 
 function checkCollision(r1, r2) { return r1.x < r2.x + r2.w && r1.x + r1.w > r2.x && r1.y < r2.y + r2.h && r1.y + r1.h > r2.y; }
 
-// JURUS FIX: Sistem Update Skor yang Akurat
 function triggerQuiz(idx) { currentState = STATE.PAUSED_QUIZ; quizActiveIndex = idx; let q = QUESTIONS[currentLevel][idx]; document.getElementById('quiz-question').innerText = q.q; let div = document.getElementById('quiz-options'); div.innerHTML = ''; q.opts.forEach((o, i) => { let b = document.createElement('button'); b.className = 'opt-btn'; b.innerText = o; b.onclick = () => checkAnswer(i, q.ans); div.appendChild(b); }); document.getElementById('quiz-feedback').style.display = 'none'; document.getElementById('quiz-next-btn').style.display = 'none'; showOverlay('quiz-modal'); }
-function checkAnswer(s, a) { let fb = document.getElementById('quiz-feedback'); fb.style.display = 'block'; if (s === a) { fb.style.color = '#27ae60'; fb.innerText = 'Jawaban Benar! +10 Poin ✨'; levelScore += 10; updateHUD(); } else { fb.style.color = '#e74c3c'; fb.innerText = 'Jawaban Kurang Tepat!'; } document.getElementById('quiz-next-btn').style.display = 'block'; document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true); }
+
+function checkAnswer(s, a) { 
+    let fb = document.getElementById('quiz-feedback'); fb.style.display = 'block'; 
+    if (s === a) { 
+        fb.style.color = '#27ae60'; fb.innerText = 'Jawaban Benar! +10 Poin ✨'; 
+        levelScore += 10; updateHUD(); 
+    } else { 
+        fb.style.color = '#e74c3c'; fb.innerText = 'Jawaban Kurang Tepat!'; 
+    } 
+    document.getElementById('quiz-next-btn').style.display = 'block'; 
+    document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true); 
+}
 
 function resumeGame() { if (quizActiveIndex >= 2) finishLevel(); else { showOverlay(null); document.getElementById('hud').classList.add('active'); setTimeout(() => { lastTime = performance.now(); currentState = STATE.PLAYING; }, 400); } }
 
@@ -215,7 +244,7 @@ function finishLevel() {
         showOverlay('level-complete'); 
     } else { 
         document.getElementById('win-score').innerText = totalScore; 
-        localStorage.setItem('bq_unlocked', 1); // Reset untuk next playthrough
+        localStorage.setItem('bq_unlocked', 1); 
         localStorage.setItem('bq_score', 0); 
         showOverlay('win-screen'); 
     } 
