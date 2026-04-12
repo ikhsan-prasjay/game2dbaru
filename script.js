@@ -1,5 +1,5 @@
 /** * BRAIN QUEST - PROFESSIONAL 2D ENGINE
- * FULLSCREEN RESPONSIVE | 5 LEVELS | PERFECT COLLISION | SCORE FIX
+ * FULLSCREEN RESPONSIVE | 5 LEVELS | PERFECT COLLISION | SFX ONLY (No BGM)
  */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -32,12 +32,11 @@ const STATE = { MENU: 0, LEVEL_SELECT: 1, PLAYING: 2, PAUSED_QUIZ: 3, GAME_OVER:
 let currentState = STATE.MENU; 
 let currentLevel = 1; 
 
-// FIX BUG SKOR: Membersihkan data kotor dari LocalStorage agar tidak jadi NaN
 let savedLevel = parseInt(localStorage.getItem('bq_unlocked'));
-let unlockedLevels = isNaN(savedLevel) ? 1 : savedLevel; 
+let unlockedLevels = 5; 
 
 let savedScore = parseInt(localStorage.getItem('bq_score'));
-let totalScore = isNaN(savedScore) ? 0 : savedScore; // Jika rusak, mulai dari 0
+let totalScore = isNaN(savedScore) ? 0 : savedScore; 
 let levelScore = 0; 
 let lives = 3; let lastTime = 0; let currentFrameId = null;
 
@@ -60,25 +59,21 @@ const LEVELS = {
     5: { name: "Kemerdekaan", bg: "village", terrain: "snow", maxSpeed: 550, spawnGap: 400, innerGap: 250, patterns: [ ['bomb', 'saw_h'], ['P3', 'saw_v'], ['bomb', 'P2', 'bomb'], ['saw_h', 'saw_v'] ] }
 };
 
-/* --- AUDIO ENGINE --- */
+/* --- AUDIO ENGINE (SFX ONLY) --- */
 const AUDIO = {
-    bgm: new Audio('assets/PSHT SEDATI - MEKARLAH BUNGA TERATE  OFFICIAL MUSIC VIDEO(NEW VERSION).mp3'),
     jump: new Audio('assets/sfx_jump.ogg'), hit: new Audio('assets/sfx_hurt.ogg'), coin: new Audio('assets/sfx_coin.ogg'),
     over: new Audio('assets/sfx_disappear.ogg'), select: new Audio('assets/sfx_select.ogg'), win: new Audio('assets/sfx_magic.ogg')
 };
 
-AUDIO.bgm.loop = true; AUDIO.bgm.volume = 0.35; AUDIO.jump.volume = 0.4; AUDIO.hit.volume = 0.5; AUDIO.coin.volume = 0.5; AUDIO.over.volume = 0.6; AUDIO.select.volume = 0.5; AUDIO.win.volume = 0.6;
+AUDIO.jump.volume = 0.4; AUDIO.hit.volume = 0.5; AUDIO.coin.volume = 0.5; AUDIO.over.volume = 0.6; AUDIO.select.volume = 0.5; AUDIO.win.volume = 0.6;
 
-let bgmStarted = false;
-function startBGM() { if (!bgmStarted) { AUDIO.bgm.play().catch(e => console.log("Menunggu interaksi.")); bgmStarted = true; } }
 function playSound(snd) { if (snd) { snd.currentTime = 0; snd.play().catch(e => {}); } }
 
 const sfx = { jump: () => playSound(AUDIO.jump), hit: () => playSound(AUDIO.hit), coin: () => playSound(AUDIO.coin), over: () => playSound(AUDIO.over), select: () => playSound(AUDIO.select), win: () => playSound(AUDIO.win) };
 
-function toggleFullScreen() { sfx.select(); startBGM(); if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(err => { console.log(err); }); } else { if (document.exitFullscreen) document.exitFullscreen(); } }
+function toggleFullScreen() { sfx.select(); if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(err => { console.log(err); }); } else { if (document.exitFullscreen) document.exitFullscreen(); } }
 function showOverlay(id) { document.querySelectorAll('.overlay').forEach(el => el.classList.remove('active')); if (id) { document.getElementById(id).classList.add('active'); document.getElementById('hud').classList.remove('active'); } }
 
-// MEMASTIKAN HUD MENGHILANGKAN NAN SEKALIPUN ADA ERROR
 function updateHUD() { 
     if(isNaN(totalScore)) totalScore = 0; 
     if(isNaN(levelScore)) levelScore = 0;
@@ -88,7 +83,7 @@ function updateHUD() {
 }
 
 function showLevelSelect() { 
-    sfx.select(); startBGM(); 
+    sfx.select(); 
     currentState = STATE.LEVEL_SELECT; showOverlay('level-select'); 
     const container = document.getElementById('levels-container'); container.innerHTML = ''; 
     for (let i = 1; i <= 5; i++) { 
@@ -101,7 +96,7 @@ function showLevelSelect() {
 class Player {
     constructor(cfgSpeed) { 
         this.w = 56; this.h = 68; this.x = 200; this.y = GROUND_Y - this.h; 
-        this.vy = 0; this.vx = 0; this.maxSpeed = cfgSpeed; this.accel = 5500; this.friction = 0.80; 
+        this.vy = 0; this.vx = 0; this.maxSpeed = cfgSpeed; this.accel = 5000; this.friction = 0.80; 
         this.grav = 1600; this.fallGravMulti = 1.8; this.jumpForce = -750; 
         this.grounded = true; this.squash = 0; this.animTimer = 0; this.facingRight = true; this.idleTimer = 0; this.isDucking = false; 
     }
@@ -110,7 +105,6 @@ class Player {
     update(dt) {
         this.isDucking = (keys.down && this.grounded);
         
-        // Anti nyangkut di dinding jurang
         if (this.y + this.h > GROUND_Y + 10) { this.vx = 0; } else { if (keys.left) this.vx -= this.accel * dt; if (keys.right) this.vx += this.accel * dt; }
         
         this.vx *= this.friction; if (this.isDucking) this.vx *= 0.5; 
@@ -127,7 +121,6 @@ class Player {
         let overPit = false; let px = this.x + this.w/2; 
         for (let p of pits) { if (px > p.x + 10 && px < p.x + p.w - 10) overPit = true;  }
         
-        // FIX BUG JATUH TEMBUS TANAH DI HP (Menghapus Batas Bawah)
         if (this.vy >= 0 && this.y + this.h >= GROUND_Y && !overPit) { 
             if (!this.grounded) { spawnDust(this.x + this.w/2 - cameraX, GROUND_Y); this.squash = 10; } 
             this.y = GROUND_Y - this.h; 
@@ -250,12 +243,11 @@ function initGame(level) { sfx.select(); currentLevel = level; resetGame(false);
 function stopGame() { currentState = STATE.RESPAWNING; let f = document.getElementById('flash-overlay'); f.style.backgroundColor = 'rgba(0,0,0,0.7)'; f.style.opacity = '1'; setTimeout(respawn, 1000); }
 function respawn() { player.x = lastCheckpointX; player.y = GROUND_Y - player.h; player.vx = 0; player.vy = 0; cameraX = Math.max(0, player.x - 200); obstacles = obstacles.filter(o => Math.abs(o.x - player.x) > 400); document.getElementById('flash-overlay').style.opacity = '0'; updateHUD(); currentState = STATE.PLAYING; lastTime = performance.now(); }
 
-// FUNGSI GAME OVER: Membersihkan NaN
 function gameOver() { 
     currentState = STATE.GAME_OVER; sfx.over(); 
     if(isNaN(totalScore)) totalScore = 0; if(isNaN(levelScore)) levelScore = 0;
     document.getElementById('final-score').innerText = totalScore + levelScore; 
-    localStorage.setItem('bq_unlocked', 1); localStorage.setItem('bq_score', 0); // Reset memori
+    localStorage.setItem('bq_unlocked', 1); localStorage.setItem('bq_score', 0);
     showOverlay('game-over'); 
 }
 
@@ -316,7 +308,6 @@ function checkAnswer(s, a) {
 
 function resumeGame() { sfx.select(); if (quizActiveIndex >= 2) finishLevel(); else { showOverlay(null); document.getElementById('hud').classList.add('active'); setTimeout(() => { lastTime = performance.now(); currentState = STATE.PLAYING; }, 400); } }
 
-// FIX BUG SKOR: Memaksa nilai score agar tidak error saat ganti level
 function finishLevel() { 
     if(isNaN(totalScore)) totalScore = 0; if(isNaN(levelScore)) levelScore = 0;
     totalScore += levelScore; 
